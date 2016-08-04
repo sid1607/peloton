@@ -165,12 +165,12 @@ class Index : public Printable {
                     const std::vector<oid_t> &key_column_ids,
                     const std::vector<ExpressionType> &exprs,
                     const ScanDirectionType &scan_direction,
-                    std::vector<ItemPointer *> &result) = 0;
+                    std::vector<ItemPointer> &result) = 0;
 
-  virtual void ScanAllKeys(std::vector<ItemPointer *> &result) = 0;
+  virtual void ScanAllKeys(std::vector<ItemPointer> &result) = 0;
 
   virtual void ScanKey(const storage::Tuple *key,
-                       std::vector<ItemPointer *> &result) = 0;
+                       std::vector<ItemPointer> &result) = 0;
 
   // This gives a hint on whether GC is needed on the index
   // for those that do not need GC this always return false

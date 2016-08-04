@@ -36,8 +36,8 @@ namespace index {
   
 class ItemPointerComparator {
  public:
-  bool operator()(ItemPointer * const &p1, ItemPointer * const &p2) const {
-    return (p1->block == p2->block) && (p1->offset == p2->offset);
+  bool operator()(ItemPointer const &p1, ItemPointer const &p2) const {
+    return (p1.block == p2.block) && (p1.offset == p2.offset);
   }
   
   ItemPointerComparator(const ItemPointerComparator&) {}
@@ -46,8 +46,8 @@ class ItemPointerComparator {
 
 class ItemPointerHashFunc {
  public:
-  size_t operator()(ItemPointer * const &p) const {
-    return std::hash<oid_t>()(p->block) ^ std::hash<oid_t>()(p->offset);
+  size_t operator()(ItemPointer const &p) const {
+    return std::hash<oid_t>()(p.block) ^ std::hash<oid_t>()(p.offset);
   }
   
   ItemPointerHashFunc(const ItemPointerHashFunc&) {}
@@ -104,17 +104,6 @@ class BWTreeIndex : public Index {
   void ScanAllKeys(std::vector<ItemPointer> &);
 
   void ScanKey(const storage::Tuple *key, std::vector<ItemPointer> &);
-
-  void Scan(const std::vector<Value> &values,
-            const std::vector<oid_t> &key_column_ids,
-            const std::vector<ExpressionType> &expr_types,
-            const ScanDirectionType &scan_direction,
-            std::vector<ItemPointer *> &result);
-
-  void ScanAllKeys(std::vector<ItemPointer *> &result);
-
-  void ScanKey(const storage::Tuple *key,
-               std::vector<ItemPointer *> &result);
 
   std::string GetTypeName() const;
 

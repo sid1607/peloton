@@ -941,8 +941,6 @@ bool IsBasedOnWriteBehindLogging(const LoggingType &logging_type);
 
 BackendType GetBackendType(const LoggingType &logging_type);
 
-void AtomicUpdateItemPointer(ItemPointer *src_ptr, const ItemPointer &value);
-
 //===--------------------------------------------------------------------===//
 // Transformers
 //===--------------------------------------------------------------------===//

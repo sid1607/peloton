@@ -33,18 +33,7 @@ template <typename KeyType, typename ValueType, class KeyComparator,
 class KeyEqualityChecker>
 SkipListIndex<KeyType, ValueType, KeyComparator,
 KeyEqualityChecker>::~SkipListIndex() {
-
-  // we should not rely on shared_ptr to reclaim memory.
-  // this is because the underlying index can split or merge leaf nodes,
-  // which invokes data data copy and deletes.
-  // as the underlying index is unaware of shared_ptr,
-  // memory allocated should be managed carefully by programmers.
-  auto iterator = container.begin();
-  for (; iterator != container.end(); ++iterator) {
-    delete iterator->second;
-    iterator->second = nullptr;
-  }
-
+  // Nothing to do here !
 }
 
 template <typename KeyType, typename ValueType, class KeyComparator,
@@ -56,8 +45,7 @@ KeyEqualityChecker>::InsertEntry(const storage::Tuple *key,
   index_key.SetFromKey(key);
 
   // Insert the key, val pair
-  auto status = container.Insert(index_key, new ItemPointer(location));
-
+  auto status = container.Insert(index_key, location);
   return status;
 }
 
@@ -80,7 +68,7 @@ CondInsertEntry(const storage::Tuple *key, const ItemPointer &location,
 
   // Insert the key if it does not exist
   const bool bInsert = false;
-  auto status = container.Update(index_key, new ItemPointer(location), bInsert);
+  auto status = container.Update(index_key, location, bInsert);
 
   return status;
 }
@@ -91,7 +79,7 @@ void SkipListIndex<KeyType, ValueType, KeyComparator, KeyEqualityChecker>::Scan(
     const std::vector<Value> &values, const std::vector<oid_t> &key_column_ids,
     const std::vector<ExpressionType> &expr_types,
     const ScanDirectionType &scan_direction,
-    std::vector<ItemPointer *> &result) {
+    std::vector<ItemPointer> &result) {
   // Check if we have leading (leftmost) column equality
   // refer : http://www.postgresql.org/docs/8.2/static/indexes-multicolumn.html
   //  oid_t leading_column_id = 0;
@@ -164,7 +152,7 @@ void SkipListIndex<KeyType, ValueType, KeyComparator, KeyEqualityChecker>::Scan(
     auto find_itr = container.Contains(find_index_key);
 
     if(find_itr != container.end()){
-      ItemPointer *location_header = find_itr->second;
+      ItemPointer location_header = find_itr->second;
       result.push_back(location_header);
     }
 
@@ -291,7 +279,7 @@ void SkipListIndex<KeyType, ValueType, KeyComparator, KeyEqualityChecker>::Scan(
             // "expression types"
             // For instance, "5" EXPR_GREATER_THAN "2" is true
             if (Compare(tuple, key_column_ids, expr_types, values) == true) {
-              ItemPointer *location_header = scan_itr->second;
+              ItemPointer location_header = scan_itr->second;
               result.push_back(location_header);
             }
 
@@ -329,7 +317,7 @@ void SkipListIndex<KeyType, ValueType, KeyComparator, KeyEqualityChecker>::Scan(
           // "expression types"
           // For instance, "5" EXPR_GREATER_THAN "2" is true
           if (Compare(tuple, key_column_ids, expr_types, values) == true) {
-            ItemPointer *location_header = scan_itr->second;
+            ItemPointer location_header = scan_itr->second;
             result.push_back(location_header);
           }
         }
@@ -349,13 +337,13 @@ void SkipListIndex<KeyType, ValueType, KeyComparator, KeyEqualityChecker>::Scan(
 template <typename KeyType, typename ValueType, class KeyComparator,
 class KeyEqualityChecker>
 void SkipListIndex<KeyType, ValueType, KeyComparator,
-KeyEqualityChecker>::ScanAllKeys(std::vector<ItemPointer *> &
+KeyEqualityChecker>::ScanAllKeys(std::vector<ItemPointer> &
                                  result) {
 
   // scan all entries
   auto iterator = container.begin();
   for (; iterator != container.end(); ++iterator) {
-    ItemPointer *location = iterator->second;
+    ItemPointer location = iterator->second;
     result.push_back(location);
   }
 
@@ -367,7 +355,7 @@ KeyEqualityChecker>::ScanAllKeys(std::vector<ItemPointer *> &
 template <typename KeyType, typename ValueType, class KeyComparator,
 class KeyEqualityChecker>
 void SkipListIndex<KeyType, ValueType, KeyComparator, KeyEqualityChecker>::ScanKey(
-    const storage::Tuple *key, std::vector<ItemPointer *> &result) {
+    const storage::Tuple *key, std::vector<ItemPointer> &result) {
   KeyType index_key;
   index_key.SetFromKey(key);
 
@@ -390,18 +378,18 @@ KeyEqualityChecker>::GetTypeName() const {
 
 // Explicit template instantiation
 
-template class SkipListIndex<GenericKey<4>, ItemPointer *, GenericComparatorRaw<4>,
+template class SkipListIndex<GenericKey<4>, ItemPointer, GenericComparatorRaw<4>,
 GenericEqualityChecker<4>>;
-template class SkipListIndex<GenericKey<8>, ItemPointer *, GenericComparatorRaw<8>,
+template class SkipListIndex<GenericKey<8>, ItemPointer, GenericComparatorRaw<8>,
 GenericEqualityChecker<8>>;
-template class SkipListIndex<GenericKey<16>, ItemPointer *, GenericComparatorRaw<16>,
+template class SkipListIndex<GenericKey<16>, ItemPointer, GenericComparatorRaw<16>,
 GenericEqualityChecker<16>>;
-template class SkipListIndex<GenericKey<64>, ItemPointer *, GenericComparatorRaw<64>,
+template class SkipListIndex<GenericKey<64>, ItemPointer, GenericComparatorRaw<64>,
 GenericEqualityChecker<64>>;
-template class SkipListIndex<GenericKey<256>, ItemPointer *,
+template class SkipListIndex<GenericKey<256>, ItemPointer,
 GenericComparatorRaw<256>, GenericEqualityChecker<256>>;
 
-template class SkipListIndex<TupleKey, ItemPointer *, TupleKeyComparatorRaw,
+template class SkipListIndex<TupleKey, ItemPointer, TupleKeyComparatorRaw,
 TupleKeyEqualityChecker>;
 
 

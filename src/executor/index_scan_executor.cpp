@@ -139,7 +139,7 @@ bool IndexScanExecutor::DExecute() {
 bool IndexScanExecutor::ExecPrimaryIndexLookup() {
   PL_ASSERT(!done_);
 
-  std::vector<ItemPointer *> tuple_location_ptrs;
+  std::vector<ItemPointer> tuple_locations;
 
   // Grab info from plan node
   const planner::IndexScanPlan &node = GetPlanNode<planner::IndexScanPlan>();
@@ -151,12 +151,12 @@ bool IndexScanExecutor::ExecPrimaryIndexLookup() {
   PL_ASSERT(index_->GetIndexType() == INDEX_CONSTRAINT_TYPE_PRIMARY_KEY);
 
   if (0 == column_ids_.size()) {
-    index_->ScanAllKeys(tuple_location_ptrs);
+    index_->ScanAllKeys(tuple_locations);
   } else {
     index_->Scan(values_, key_column_ids_, expr_types_,
-                 SCAN_DIRECTION_TYPE_FORWARD, tuple_location_ptrs);
+                 SCAN_DIRECTION_TYPE_FORWARD, tuple_locations);
   }
-  if (tuple_location_ptrs.size() == 0) return false;
+  if (tuple_locations.size() == 0) return false;
 
   auto &transaction_manager =
       concurrency::TransactionManagerFactory::GetInstance();
@@ -164,9 +164,7 @@ bool IndexScanExecutor::ExecPrimaryIndexLookup() {
   std::map<oid_t, std::vector<oid_t>> visible_tuples;
   std::vector<ItemPointer> garbage_tuples;
   // for every tuple that is found in the index.
-  for (auto tuple_location_ptr : tuple_location_ptrs) {
-    ItemPointer tuple_location = *tuple_location_ptr;
-
+  for (auto tuple_location : tuple_locations) {
     auto &manager = catalog::Manager::GetInstance();
     auto tile_group = manager.GetTileGroup(tuple_location.block);
     auto tile_group_header = tile_group.get()->GetHeader();
@@ -226,9 +224,6 @@ bool IndexScanExecutor::ExecPrimaryIndexLookup() {
           return false;
         }
 
-        // FIXME: Is this always true? what if we have a deleted tuple? --jiexi
-        PL_ASSERT(tuple_location.IsNull() == false);
-
         cid_t max_committed_cid = transaction_manager.GetMaxCommittedCid();
 
         // check whether older version is garbage.
@@ -241,9 +236,6 @@ bool IndexScanExecutor::ExecPrimaryIndexLookup() {
 
           if (tile_group_header->SetAtomicTransactionId(
                   old_item.offset, INVALID_TXN_ID) == true) {
-            // atomically swap item pointer held in the index bucket.
-            AtomicUpdateItemPointer(tuple_location_ptr, tuple_location);
-
             // currently, let's assume only primary index exists.
             // gc::GCManagerFactory::GetInstance().RecycleTupleSlot(
             //     table_->GetOid(), old_item.block, old_item.offset,
@@ -267,16 +259,6 @@ bool IndexScanExecutor::ExecPrimaryIndexLookup() {
       }
     }
   }
-
-  // Add all garbage tuples to GC manager
-  //  if (garbage_tuples.size() != 0) {
-  //    cid_t garbage_timestamp = transaction_manager.GetNextCommitId();
-  //    for (auto garbage : garbage_tuples) {
-  //      gc::GCManagerFactory::GetInstance().RecycleTupleSlot(
-  //          table_->GetOid(), garbage.block, garbage.offset,
-  // garbage_timestamp);
-  //    }
-  //  }
 
   // Construct a logical tile for each block
   for (auto tuples : visible_tuples) {
@@ -304,7 +286,7 @@ bool IndexScanExecutor::ExecPrimaryIndexLookup() {
 bool IndexScanExecutor::ExecSecondaryIndexLookup() {
   PL_ASSERT(!done_);
 
-  std::vector<ItemPointer *> tuple_location_ptrs;
+  std::vector<ItemPointer> tuple_locations;
 
   // Grab info from plan node and check it
   const planner::IndexScanPlan &node = GetPlanNode<planner::IndexScanPlan>();
@@ -316,25 +298,24 @@ bool IndexScanExecutor::ExecSecondaryIndexLookup() {
   PL_ASSERT(index_->GetIndexType() != INDEX_CONSTRAINT_TYPE_PRIMARY_KEY);
 
   if (0 == key_column_ids_.size()) {
-    index_->ScanAllKeys(tuple_location_ptrs);
+    index_->ScanAllKeys(tuple_locations);
   } else {
     index_->Scan(values_, key_column_ids_, expr_type_,
-                 SCAN_DIRECTION_TYPE_FORWARD, tuple_location_ptrs);
+                 SCAN_DIRECTION_TYPE_FORWARD, tuple_locations);
   }
 
-  if (tuple_location_ptrs.size() == 0) {
+  if (tuple_locations.size() == 0) {
     return false;
   }
 
-  LOG_TRACE("Tuple locations: %lu", tuple_location_ptrs.size());
+  LOG_TRACE("Tuple locations: %lu", tuple_locations.size());
 
   auto &transaction_manager =
       concurrency::TransactionManagerFactory::GetInstance();
 
   std::map<oid_t, std::vector<oid_t>> visible_tuples;
   // for every tuple that is found in the index.
-  for (auto tuple_location_ptr : tuple_location_ptrs) {
-    auto tuple_location = *tuple_location_ptr;
+  for (auto tuple_location : tuple_locations) {
     auto &manager = catalog::Manager::GetInstance();
     auto tile_group = manager.GetTileGroup(tuple_location.block);
     auto tile_group_header = tile_group.get()->GetHeader();

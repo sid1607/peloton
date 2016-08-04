@@ -257,7 +257,7 @@ static void DeleteTest2(index::Index *index,
 static void TestIndexPerformance(const IndexType& index_type) {
   
   // This is where we read all values in and verify them
-  std::vector<ItemPointer *> location_ptrs;
+  std::vector<ItemPointer> locations;
 
   // INDEX
   std::unique_ptr<index::Index> index(BuildIndex(false, index_type));
@@ -287,9 +287,9 @@ static void TestIndexPerformance(const IndexType& index_type) {
     index->PerformGC();
   }
 
-  index->ScanAllKeys(location_ptrs);
-  EXPECT_EQ(location_ptrs.size(), num_thread * num_key);
-  location_ptrs.clear();
+  index->ScanAllKeys(locations);
+  EXPECT_EQ(locations.size(), num_thread * num_key);
+  locations.clear();
 
   timer.Stop();
   LOG_INFO("Test = InsertTest1; Type = %d; Duration = %.2lf",
@@ -310,9 +310,9 @@ static void TestIndexPerformance(const IndexType& index_type) {
       index->PerformGC();
     }
 
-    index->ScanAllKeys(location_ptrs);
-    EXPECT_EQ(location_ptrs.size(), 0);
-    location_ptrs.clear();
+    index->ScanAllKeys(locations);
+    EXPECT_EQ(locations.size(), 0);
+    locations.clear();
 
     timer.Stop();
     LOG_INFO("Test = DeleteTest1; Type = %d; Duration = %.2lf",
@@ -338,9 +338,9 @@ static void TestIndexPerformance(const IndexType& index_type) {
       index->PerformGC();
     }
 
-    index->ScanAllKeys(location_ptrs);
-    EXPECT_EQ(location_ptrs.size(), num_thread * num_key);
-    location_ptrs.clear();
+    index->ScanAllKeys(locations);
+    EXPECT_EQ(locations.size(), num_thread * num_key);
+    locations.clear();
 
     timer.Stop();
     LOG_INFO("Test = InsertTest2; Type = %d; Duration = %.2lf",
@@ -366,12 +366,12 @@ static void TestIndexPerformance(const IndexType& index_type) {
       index->PerformGC();
     }
 
-    index->ScanAllKeys(location_ptrs);
-    EXPECT_EQ(location_ptrs.size(), 0);
-    location_ptrs.clear();
+    index->ScanAllKeys(locations);
+    EXPECT_EQ(locations.size(), 0);
+    locations.clear();
 
     timer.Stop();
-    LOG_INFO("Test = DeleteTest1; Type = %d; Duration = %.2lf",
+    LOG_INFO("Test = DeleteTest2; Type = %d; Duration = %.2lf",
              (int)index_type,
              timer.GetDuration());
   } else {

@@ -99,12 +99,12 @@ bool SKIP_LIST_MAP_TYPE::IsEmpty() const{
 
 // Explicit template instantiation
 
-template class SkipListMap<index::GenericKey<4>, ItemPointer *, index::GenericComparatorRaw<4>>;
-template class SkipListMap<index::GenericKey<8>, ItemPointer *, index::GenericComparatorRaw<8>>;
-template class SkipListMap<index::GenericKey<16>, ItemPointer *, index::GenericComparatorRaw<16>>;
-template class SkipListMap<index::GenericKey<64>, ItemPointer *, index::GenericComparatorRaw<64>>;
-template class SkipListMap<index::GenericKey<256>, ItemPointer *, index::GenericComparatorRaw<256>>;
+template class SkipListMap<index::GenericKey<4>, ItemPointer, index::GenericComparatorRaw<4>>;
+template class SkipListMap<index::GenericKey<8>, ItemPointer, index::GenericComparatorRaw<8>>;
+template class SkipListMap<index::GenericKey<16>, ItemPointer, index::GenericComparatorRaw<16>>;
+template class SkipListMap<index::GenericKey<64>, ItemPointer, index::GenericComparatorRaw<64>>;
+template class SkipListMap<index::GenericKey<256>, ItemPointer, index::GenericComparatorRaw<256>>;
 
-template class SkipListMap<index::TupleKey, ItemPointer *, index::TupleKeyComparatorRaw>;
+template class SkipListMap<index::TupleKey, ItemPointer, index::TupleKeyComparatorRaw>;
 
 }  // End peloton namespace

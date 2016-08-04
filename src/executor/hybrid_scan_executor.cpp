@@ -339,28 +339,28 @@ bool HybridScanExecutor::ExecPrimaryIndexLookup() {
   auto key_column_ids_ = node.GetKeyColumnIds();
   auto expr_type_ = node.GetExprTypes();
 
-  std::vector<ItemPointer *> tuple_location_ptrs;
+  std::vector<ItemPointer> tuple_locations;
 
   PL_ASSERT(index_->GetIndexType() == INDEX_CONSTRAINT_TYPE_PRIMARY_KEY);
 
   if (0 == key_column_ids_.size()) {
     LOG_TRACE("Scan all keys");
-    index_->ScanAllKeys(tuple_location_ptrs);
+    index_->ScanAllKeys(tuple_locations);
   } else {
     LOG_TRACE("Scan");
     index_->Scan(values_,
                  key_column_ids_,
                  expr_type_,
                  SCAN_DIRECTION_TYPE_FORWARD,
-                 tuple_location_ptrs);
+                 tuple_locations);
   }
 
-  LOG_TRACE("Result tuple count: %lu", tuple_location_ptrs.size());
+  LOG_TRACE("Result tuple count: %lu", tuple_locations.size());
 
   auto &transaction_manager =
       concurrency::TransactionManagerFactory::GetInstance();
 
-  if (tuple_location_ptrs.size() == 0) {
+  if (tuple_locations.size() == 0) {
     index_done_ = true;
     return false;
   }
@@ -368,9 +368,7 @@ bool HybridScanExecutor::ExecPrimaryIndexLookup() {
   std::map<oid_t, std::vector<oid_t>> visible_tuples;
 
   // for every tuple that is found in the index.
-  for (auto tuple_location_ptr : tuple_location_ptrs) {
-    ItemPointer tuple_location = *tuple_location_ptr;
-
+  for (auto tuple_location : tuple_locations) {
     if (type_ == HYBRID_SCAN_TYPE_HYBRID &&
         tuple_location.block >= (block_threshold)) {
       item_pointers_.insert(tuple_location);
@@ -410,12 +408,6 @@ bool HybridScanExecutor::ExecPrimaryIndexLookup() {
               INITIAL_TXN_ID ||
               tile_group_header->GetTransactionId(old_item.offset) ==
                   INVALID_TXN_ID);
-
-          if (tile_group_header->SetAtomicTransactionId(
-              old_item.offset, INVALID_TXN_ID) == true) {
-            // atomically swap item pointer held in the index bucket.
-            AtomicUpdateItemPointer(tuple_location_ptr, tuple_location);
-          }
         }
 
         tile_group = manager.GetTileGroup(tuple_location.block);

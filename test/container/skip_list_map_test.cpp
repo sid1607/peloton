@@ -32,7 +32,7 @@ ItemPointer foo(23, 47);
 ItemPointer bar;
 
 typedef index::GenericKey<4>  key_type;
-typedef ItemPointer *  value_type;
+typedef ItemPointer  value_type;
 typedef index::GenericComparatorRaw<4> key_comparator;
 
 // Test basic functionality
@@ -67,7 +67,7 @@ TEST_F(SkipListMapTest, BasicTest) {
     key_type key;
     key.SetFromKey(tuples[element]);
 
-    value_type val = &foo;
+    value_type val = foo;
     auto status = map.Insert(key, val);
     EXPECT_TRUE(status);
     status = map.Insert(key, val);
@@ -78,11 +78,11 @@ TEST_F(SkipListMapTest, BasicTest) {
     key_type key;
     key.SetFromKey(tuples[element]);
 
-    value_type value = &bar;
+    value_type value = bar;
     auto status = map.Find(key, value);
     EXPECT_TRUE(status);
-    EXPECT_EQ(foo.block, value->block);
-    LOG_INFO("bar : %d %d", value->block, value->offset);
+    EXPECT_EQ(foo.block, value.block);
+    LOG_INFO("bar : %d %d", value.block, value.offset);
   }
 
   for(auto tuple : tuples) {
@@ -111,7 +111,7 @@ void InsertTest(size_t scale_factor, catalog::Schema *schema, uint64_t thread_it
     key_type key;
     key.SetFromKey(tuple);
 
-    value_type val = &foo;
+    value_type val = foo;
 
     auto status = test_skip_list_map.Insert(key, val);
     EXPECT_TRUE(status);

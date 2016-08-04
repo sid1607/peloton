@@ -102,10 +102,6 @@ class Tile : public Printable {
                     const size_t column_offset, const bool is_inlined,
                     const size_t column_length);
 
-  // Get tuple at location
-  static Tuple *GetTuple(catalog::Manager *catalog,
-                         const ItemPointer *tuple_location);
-
   // Copy current tile in given backend and return new tile
   Tile *CopyTile(BackendType backend_type);
 
