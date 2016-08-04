@@ -11,22 +11,25 @@ peloton_default_properties(peloton-proto)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
-BISON_TARGET(SQLParser ${CMAKE_CURRENT_SOURCE_DIR}/parser/sql_parser.y ${CMAKE_CURRENT_BINARY_DIR}/sql_parser.cpp)
-FLEX_TARGET(SQLScanner ${CMAKE_CURRENT_SOURCE_DIR}/parser/sql_scanner.l ${CMAKE_CURRENT_BINARY_DIR}/sql_scanner.cpp)
-ADD_FLEX_BISON_DEPENDENCY(SQLScanner SQLParser)
+set(SQLParser_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/sql_parser.cpp")
+set(SQLScanner_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/sql_scanner.cpp")
+
+if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/sql_parser.cpp")
+	message("Building parser for the first time.")	
+	BISON_TARGET(SQLParser ${PROJECT_SOURCE_DIR}/src/parser/sql_parser.y ${SQLParser_LOCATION})
+	FLEX_TARGET(SQLScanner ${PROJECT_SOURCE_DIR}/src/parser/sql_scanner.l ${SQLScanner_LOCATION})
+	ADD_FLEX_BISON_DEPENDENCY(SQLScanner SQLParser)
+endif()
+
+add_library(peloton-parser STATIC ${SQLParser_LOCATION} ${SQLScanner_LOCATION})
+set(Peloton_LINKER_LIBS peloton-parser ${Peloton_LINKER_LIBS}) # note, crucial to prepend!
+peloton_default_properties(peloton-parser)
 
 # --[ Parser Flags
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 set(PARSER_FLAGS "-w -Wno-error -fpermissive")
-set_source_files_properties(${BISON_SQLParser_OUTPUTS} PROPERTIES COMPILE_FLAGS ${PARSER_FLAGS})
-set_source_files_properties(${FLEX_SQLScanner_OUTPUTS} PROPERTIES COMPILE_FLAGS ${PARSER_FLAGS})
-
-add_library(peloton-parser ${BISON_SQLParser_OUTPUTS} ${FLEX_SQLScanner_OUTPUTS})
-set(Peloton_LINKER_LIBS peloton-parser ${Peloton_LINKER_LIBS}) # note, crucial to prepend!
-peloton_default_properties(peloton-parser)
+set_source_files_properties(${SQLParser_LOCATION} PROPERTIES COMPILE_FLAGS ${PARSER_FLAGS})
+set_source_files_properties(${SQLScanner_LOCATION} PROPERTIES COMPILE_FLAGS ${PARSER_FLAGS})
 
 # --[ Peloton library
 
