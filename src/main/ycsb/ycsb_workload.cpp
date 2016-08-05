@@ -365,9 +365,11 @@ bool RunRead(ZipfDistribution &zipf) {
 
   // Column ids to be added to logical tile after scan.
   std::vector<oid_t> column_ids;
-  oid_t column_count = state.column_count + 1;
+  //oid_t column_count = state.column_count + 1;
+  // By default, read only one field
+  oid_t column_count = 1;
 
-  for (oid_t col_itr = 0; col_itr < column_count; col_itr++) {
+  for (oid_t col_itr = 1; col_itr <= column_count; col_itr++) {
     column_ids.push_back(col_itr);
   }
 
