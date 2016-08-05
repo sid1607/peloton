@@ -162,7 +162,7 @@ bool IndexScanExecutor::ExecPrimaryIndexLookup() {
       concurrency::TransactionManagerFactory::GetInstance();
 
   std::map<oid_t, std::vector<oid_t>> visible_tuples;
-  std::vector<ItemPointer> garbage_tuples;
+
   // for every tuple that is found in the index.
   for (auto tuple_location : tuple_locations) {
     auto &manager = catalog::Manager::GetInstance();
@@ -213,20 +213,7 @@ bool IndexScanExecutor::ExecPrimaryIndexLookup() {
         cid_t old_end_cid = tile_group_header->GetEndCommitId(old_item.offset);
 
         tuple_location = tile_group_header->GetNextItemPointer(old_item.offset);
-        // there must exist a visible version.
-
-        // FIXME: currently, only speculative read transaction manager **may**
-        // see a null version
-        // it's a potential bug
-        if (tuple_location.IsNull()) {
-          transaction_manager.SetTransactionResult(RESULT_FAILURE);
-          // FIXME: this cause unnecessary abort when we have delete operations
-          return false;
-        }
-
         cid_t max_committed_cid = transaction_manager.GetMaxCommittedCid();
-
-        // check whether older version is garbage.
 
         if (old_end_cid <= max_committed_cid) {
           PL_ASSERT(tile_group_header->GetTransactionId(old_item.offset) ==
@@ -236,12 +223,6 @@ bool IndexScanExecutor::ExecPrimaryIndexLookup() {
 
           if (tile_group_header->SetAtomicTransactionId(
                   old_item.offset, INVALID_TXN_ID) == true) {
-            // currently, let's assume only primary index exists.
-            // gc::GCManagerFactory::GetInstance().RecycleTupleSlot(
-            //     table_->GetOid(), old_item.block, old_item.offset,
-            //     transaction_manager.GetNextCommitId());
-            garbage_tuples.push_back(old_item);
-
             tile_group = manager.GetTileGroup(tuple_location.block);
             tile_group_header = tile_group.get()->GetHeader();
             tile_group_header->SetPrevItemPointer(tuple_location.offset,
