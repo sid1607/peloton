@@ -67,21 +67,7 @@ DataTable::DataTable(catalog::Schema *schema, const std::string &table_name,
 DataTable::~DataTable() {
 
   // clean up tile groups by dropping the references in the catalog
-  auto &catalog_manager = catalog::Manager::GetInstance();
-  auto tile_groups_size = tile_groups_.GetSize();
-  std::size_t tile_groups_itr;
-
-  for (tile_groups_itr = 0;
-      tile_groups_itr < tile_groups_size;
-      tile_groups_itr++) {
-    auto tile_group_id = tile_groups_.Find(tile_groups_itr);
-
-    if(tile_group_id != invalid_tile_group_id) {
-      LOG_TRACE("Dropping tile group : %u ", tile_group_id);
-      // drop tile group in catalog
-      catalog_manager.DropTileGroup(tile_group_id);
-    }
-  }
+  DropTileGroups();
 
   // indices will be automatically cleaned up
 
@@ -149,7 +135,8 @@ ItemPointer DataTable::GetEmptyTupleSlot(const storage::Tuple *tuple,
   // get valid tuple.
   while (true) {
     // get the last tile group.
-    tile_group = GetTileGroup(tile_group_count_ - 1);
+    auto tile_group_count = GetTileGroupCount();
+    tile_group = GetTileGroup(tile_group_count - 1);
 
     tuple_slot = tile_group->InsertTuple(tuple);
 
@@ -533,16 +520,13 @@ oid_t DataTable::AddDefaultTileGroup() {
   {
     LOG_TRACE("Added a tile group ");
 
-    tile_groups_.Append(tile_group_id);
-
     // add tile group metadata in locator
     catalog::Manager::GetInstance().AddTileGroup(tile_group_id, tile_group);
 
-    // we must guarantee that the compiler always add tile group before adding
-    // tile_group_count_.
-    COMPILER_MEMORY_FENCE;
-
-    tile_group_count_++;
+    // add tile group to set of all tile groups
+    tile_group_lock_.WriteLock();
+    tile_groups_.push_back(tile_group_id);
+    tile_group_lock_.Unlock();
 
     LOG_TRACE("Recording tile group : %u ", tile_group_id);
   }
@@ -567,22 +551,25 @@ void DataTable::AddTileGroupWithOidForRecovery(const oid_t &tile_group_id) {
       database_oid, table_oid, tile_group_id, this, schemas, column_map,
       tuples_per_tilegroup_));
 
-  auto tile_groups_exists = tile_groups_.Contains(tile_group_id);
+  tile_group_lock_.ReadLock();
+  bool tile_groups_exists = false;
+  auto location = std::find(tile_groups_.begin(), tile_groups_.end(), tile_group_id);
+  if(location != tile_groups_.end()){
+    tile_groups_exists = true;
+  }
+  tile_group_lock_.Unlock();
 
   if (tile_groups_exists == false) {
-
-    tile_groups_.Append(tile_group_id);
-
-    LOG_TRACE("Added a tile group ");
 
     // add tile group metadata in locator
     catalog::Manager::GetInstance().AddTileGroup(tile_group_id, tile_group);
 
-    // we must guarantee that the compiler always add tile group before adding
-    // tile_group_count_.
-    COMPILER_MEMORY_FENCE;
+    // add tile group to set of all tile groups
+    tile_group_lock_.WriteLock();
+    tile_groups_.push_back(tile_group_id);
+    tile_group_lock_.Unlock();
 
-    tile_group_count_++;
+    LOG_TRACE("Added a tile group ");
 
     LOG_TRACE("Recording tile group : %u ", tile_group_id);
   }
@@ -592,28 +579,33 @@ void DataTable::AddTileGroupWithOidForRecovery(const oid_t &tile_group_id) {
 void DataTable::AddTileGroup(const std::shared_ptr<TileGroup> &tile_group) {
   oid_t tile_group_id = tile_group->GetTileGroupId();
 
-  tile_groups_.Append(tile_group_id);
+  tile_group_lock_.WriteLock();
+  tile_groups_.push_back(tile_group_id);
+  tile_group_lock_.Unlock();
 
   // add tile group in catalog
   catalog::Manager::GetInstance().AddTileGroup(tile_group_id, tile_group);
 
-  // we must guarantee that the compiler always add tile group before adding
-  // tile_group_count_.
-  COMPILER_MEMORY_FENCE;
-
-  tile_group_count_++;
-
   LOG_TRACE("Recording tile group : %u ", tile_group_id);
 }
 
-size_t DataTable::GetTileGroupCount() const { return tile_group_count_; }
+size_t DataTable::GetTileGroupCount() const {
+  size_t tile_group_count_ = 0;
+
+  tile_group_lock_.ReadLock();
+  tile_group_count_ = tile_groups_.size();
+  tile_group_lock_.Unlock();
+
+  return tile_group_count_;
+}
 
 std::shared_ptr<storage::TileGroup> DataTable::GetTileGroup(
     const std::size_t &tile_group_offset) const {
   PL_ASSERT(tile_group_offset < GetTileGroupCount());
 
-  auto tile_group_id = tile_groups_.FindValid(tile_group_offset,
-                                              invalid_tile_group_id);
+  tile_group_lock_.ReadLock();
+  auto tile_group_id = tile_groups_.at(tile_group_offset);
+  tile_group_lock_.Unlock();
 
   return GetTileGroupById(tile_group_id);
 }
@@ -621,30 +613,37 @@ std::shared_ptr<storage::TileGroup> DataTable::GetTileGroup(
 std::shared_ptr<storage::TileGroup> DataTable::GetTileGroupById(
     const oid_t &tile_group_id) const {
   auto &manager = catalog::Manager::GetInstance();
-  return manager.GetTileGroup(tile_group_id);
+  auto tile_group = manager.GetTileGroup(tile_group_id);
+
+  if(tile_group == nullptr){
+    LOG_INFO("GetTileGroupById: %u", tile_group_id);
+  }
+
+  return tile_group;
 }
 
 void DataTable::DropTileGroups() {
 
   auto &catalog_manager = catalog::Manager::GetInstance();
-  auto tile_groups_size = tile_groups_.GetSize();
+  auto tile_group_count = GetTileGroupCount();
   std::size_t tile_groups_itr;
 
+  tile_group_lock_.ReadLock();
   for (tile_groups_itr = 0;
-      tile_groups_itr < tile_groups_size;
+      tile_groups_itr < tile_group_count;
       tile_groups_itr++) {
-    auto tile_group_id = tile_groups_.Find(tile_groups_itr);
 
-    if(tile_group_id != invalid_tile_group_id) {
-      // drop tile group in catalog
-      catalog_manager.DropTileGroup(tile_group_id);
-    }
+    auto tile_group_id = tile_groups_[tile_groups_itr];
+
+    // drop tile group in catalog
+    catalog_manager.DropTileGroup(tile_group_id);
   }
+  tile_group_lock_.Unlock();
 
-  // Clear array
-  tile_groups_.Clear(invalid_tile_group_id);
-
-  tile_group_count_ = 0;
+  // Clear tile groups
+  tile_group_lock_.WriteLock();
+  tile_groups_.clear();
+  tile_group_lock_.Unlock();
 
 }
 
@@ -683,13 +682,22 @@ const std::string DataTable::GetInfo() const {
 // INDEX
 //===--------------------------------------------------------------------===//
 
+size_t DataTable::GetIndexCount() const {
+  size_t index_count_ = 0;
+
+  index_count_ = indexes_.GetSize();
+
+  return index_count_;
+}
+
 void DataTable::AddIndex(std::shared_ptr<index::Index> index) {
-  // Add index
-  indexes_.Append(index);
 
   // Add index column info
   auto index_columns_ = index->GetMetadata()->GetKeyAttrs();
   std::set<oid_t> index_columns_set(index_columns_.begin(), index_columns_.end());
+
+  // Add index
+  indexes_.Append(index);
 
   indexes_columns_.push_back(index_columns_set);
 
@@ -704,24 +712,8 @@ void DataTable::AddIndex(std::shared_ptr<index::Index> index) {
 
 std::shared_ptr<index::Index> DataTable::GetIndexWithOid(
     const oid_t &index_oid) {
-
-  std::shared_ptr<index::Index> ret_index;
-  auto index_count = indexes_.GetSize();
-
-  for(std::size_t index_itr = 0; index_itr < index_count; index_itr++){
-    ret_index = indexes_.Find(index_itr);
-    if (ret_index->GetOid() == index_oid) {
-      break;
-    }
-  }
-
-  return ret_index;
-}
-
-void DataTable::DropIndexWithOid(const oid_t &index_oid) {
-  oid_t index_offset = 0;
   std::shared_ptr<index::Index> index;
-  auto index_count = indexes_.GetSize();
+  auto index_count = GetIndexCount();
 
   for(std::size_t index_itr = 0; index_itr < index_count; index_itr++){
     index = indexes_.Find(index_itr);
@@ -730,7 +722,22 @@ void DataTable::DropIndexWithOid(const oid_t &index_oid) {
     }
   }
 
-  PL_ASSERT(index_offset < indexes_.GetSize());
+  return index;
+}
+
+void DataTable::DropIndexWithOid(const oid_t &index_oid) {
+  oid_t index_offset = 0;
+  std::shared_ptr<index::Index> index;
+  auto index_count = GetIndexCount();
+
+  for(std::size_t index_itr = 0; index_itr < index_count; index_itr++){
+    index = indexes_.Find(index_itr);
+    if (index->GetOid() == index_oid) {
+      break;
+    }
+  }
+
+  PL_ASSERT(index_offset < GetIndexCount());
 
   // Drop the index
   indexes_.Update(index_offset, nullptr);
@@ -739,10 +746,10 @@ void DataTable::DropIndexWithOid(const oid_t &index_oid) {
   indexes_columns_.erase(indexes_columns_.begin() + index_offset);
 }
 
-std::shared_ptr<index::Index> DataTable::GetIndex(
-    const oid_t &index_offset) {
+std::shared_ptr<index::Index> DataTable::GetIndex(const oid_t &index_offset) {
 
-  PL_ASSERT(index_offset < indexes_.GetSize());
+  PL_ASSERT(index_offset < GetIndexCount());
+
   auto ret_index = indexes_.Find(index_offset);
 
   return ret_index;
@@ -752,14 +759,6 @@ std::set<oid_t> DataTable::GetIndexAttrs(const oid_t &index_offset) const {
   PL_ASSERT(index_offset < indexes_columns_.size());
   auto index_attrs = indexes_columns_.at(index_offset);
   return index_attrs;
-}
-
-oid_t DataTable::GetIndexCount() const {
-  size_t index_count;
-
-  index_count = indexes_.GetSize();
-
-  return index_count;
 }
 
 //===--------------------------------------------------------------------===//
@@ -876,13 +875,15 @@ void SetTransformedTileGroup(storage::TileGroup *orig_tile_group,
 storage::TileGroup *DataTable::TransformTileGroup(
     const oid_t &tile_group_offset, const double &theta) {
   // First, check if the tile group is in this table
-  if (tile_group_offset >= tile_groups_.GetSize()) {
+  auto tile_groups_size = GetTileGroupCount();
+  if (tile_group_offset >= tile_groups_size) {
     LOG_ERROR("Tile group offset not found in table : %u ", tile_group_offset);
     return nullptr;
   }
 
-  auto tile_group_id = tile_groups_.FindValid(tile_group_offset,
-                                              invalid_tile_group_id);
+  tile_group_lock_.ReadLock();
+  auto tile_group_id = tile_groups_[tile_group_offset];
+  tile_group_lock_.Unlock();
 
   // Get orig tile group from catalog
   auto &catalog_manager = catalog::Manager::GetInstance();

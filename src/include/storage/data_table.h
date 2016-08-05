@@ -141,7 +141,7 @@ class DataTable : public AbstractTable {
 
   std::set<oid_t> GetIndexAttrs(const oid_t &index_offset) const;
 
-  oid_t GetIndexCount() const;
+  std::size_t GetIndexCount() const;
 
   const std::vector<std::set<oid_t>> &GetIndexColumns() const {
     return indexes_columns_;
@@ -268,9 +268,14 @@ class DataTable : public AbstractTable {
   size_t tuples_per_tilegroup_;
 
   // TILE GROUPS
-  LockFreeArray<oid_t> tile_groups_;
+  RWLock tile_group_lock_;
 
-  std::atomic<size_t> tile_group_count_ = ATOMIC_VAR_INIT(0);
+  std::vector<oid_t> tile_groups_;
+
+  // set of current tile groups
+  static constexpr std::size_t ACTIVE_TILE_GROUP_COUNT = 8;
+
+  std::shared_ptr<storage::TileGroup> last_tile_groups_[ACTIVE_TILE_GROUP_COUNT];
 
   // data table mutex
   std::mutex data_table_mutex_;
