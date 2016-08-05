@@ -18,10 +18,12 @@
 #include <vector>
 #include <mutex>
 #include <memory>
-#include <planner/project_info.h>
 
 #include "common/types.h"
 #include "common/printable.h"
+#include "planner/project_info.h"
+#include "storage/tile.h"
+#include "storage/tile_group_header.h"
 
 namespace peloton {
 
@@ -129,32 +131,32 @@ class TileGroup : public Printable {
   unsigned int NumTiles() const { return tiles.size(); }
 
   // Get the tile at given offset in the tile group
-  Tile *GetTile(const oid_t tile_itr) const;
+  inline Tile *GetTile(const oid_t tile_itr) const;
 
   // Get a reference to the tile at the given offset in the tile group
-  std::shared_ptr<Tile> GetTileReference(const oid_t tile_offset) const;
+  inline std::shared_ptr<Tile> GetTileReference(const oid_t tile_offset) const;
 
-  oid_t GetTileId(const oid_t tile_id) const;
+  inline oid_t GetTileId(const oid_t tile_id) const;
 
-  peloton::VarlenPool *GetTilePool(const oid_t tile_id) const;
+  inline peloton::VarlenPool *GetTilePool(const oid_t tile_id) const;
 
-  const std::map<oid_t, std::pair<oid_t, oid_t>> &GetColumnMap() const {
+  inline const std::map<oid_t, std::pair<oid_t, oid_t>> &GetColumnMap() const {
     return column_map;
   }
 
-  oid_t GetTileGroupId() const { return tile_group_id; }
+  inline oid_t GetTileGroupId() const { return tile_group_id; }
 
-  oid_t GetDatabaseId() const { return database_id; }
+  inline oid_t GetDatabaseId() const { return database_id; }
 
-  oid_t GetTableId() const { return table_id; }
+  inline oid_t GetTableId() const { return table_id; }
 
-  AbstractTable *GetAbstractTable() const { return table; }
+  inline AbstractTable *GetAbstractTable() const { return table; }
 
-  void SetTileGroupId(oid_t tile_group_id_) { tile_group_id = tile_group_id_; }
+  inline void SetTileGroupId(oid_t tile_group_id_) { tile_group_id = tile_group_id_; }
 
-  std::vector<catalog::Schema> &GetTileSchemas() { return tile_schemas; }
+  inline std::vector<catalog::Schema> &GetTileSchemas() { return tile_schemas; }
 
-  size_t GetTileCount() const { return tile_count; }
+  inline size_t GetTileCount() const { return tile_count; }
 
   void LocateTileAndColumn(oid_t column_offset, oid_t &tile_offset,
                            oid_t &tile_column_offset);
@@ -207,6 +209,44 @@ class TileGroup : public Printable {
   // <column offset> to <tile offset, tile column offset>
   column_map_type column_map;
 };
+
+inline oid_t TileGroup::GetTileId(const oid_t tile_id) const {
+  PL_ASSERT(tiles[tile_id]);
+  return tiles[tile_id]->GetTileId();
+}
+
+inline peloton::VarlenPool *TileGroup::GetTilePool(const oid_t tile_id) const {
+  Tile *tile = GetTile(tile_id);
+
+  if (tile != nullptr) {
+    return tile->GetPool();
+  }
+
+  return nullptr;
+}
+
+// TODO: check when this function is called. --Yingjun
+inline oid_t TileGroup::GetNextTupleSlot() const {
+  return tile_group_header->GetCurrentNextTupleSlot();
+}
+
+// this function is called only when building tile groups for aggregation
+// operations.
+inline oid_t TileGroup::GetActiveTupleCount() const {
+  return tile_group_header->GetActiveTupleCount();
+}
+
+inline Tile *TileGroup::GetTile(const oid_t tile_offset) const {
+  PL_ASSERT(tile_offset < tile_count);
+  Tile *tile = tiles[tile_offset].get();
+  return tile;
+}
+
+inline std::shared_ptr<Tile> TileGroup::GetTileReference(
+    const oid_t tile_offset) const {
+  PL_ASSERT(tile_offset < tile_count);
+  return tiles[tile_offset];
+}
 
 }  // End storage namespace
 }  // End peloton namespace

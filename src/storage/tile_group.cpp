@@ -63,32 +63,6 @@ TileGroup::~TileGroup() {
   delete tile_group_header;
 }
 
-oid_t TileGroup::GetTileId(const oid_t tile_id) const {
-  PL_ASSERT(tiles[tile_id]);
-  return tiles[tile_id]->GetTileId();
-}
-
-peloton::VarlenPool *TileGroup::GetTilePool(const oid_t tile_id) const {
-  Tile *tile = GetTile(tile_id);
-
-  if (tile != nullptr) {
-    return tile->GetPool();
-  }
-
-  return nullptr;
-}
-
-// TODO: check when this function is called. --Yingjun
-oid_t TileGroup::GetNextTupleSlot() const {
-  return tile_group_header->GetCurrentNextTupleSlot();
-}
-
-// this function is called only when building tile groups for aggregation
-// operations.
-oid_t TileGroup::GetActiveTupleCount() const {
-  return tile_group_header->GetActiveTupleCount();
-}
-
 //===--------------------------------------------------------------------===//
 // Operations
 //===--------------------------------------------------------------------===//
@@ -413,18 +387,6 @@ Value TileGroup::GetValue(oid_t tuple_id, oid_t column_id) {
   oid_t tile_column_id, tile_offset;
   LocateTileAndColumn(column_id, tile_offset, tile_column_id);
   return GetTile(tile_offset)->GetValue(tuple_id, tile_column_id);
-}
-
-Tile *TileGroup::GetTile(const oid_t tile_offset) const {
-  PL_ASSERT(tile_offset < tile_count);
-  Tile *tile = tiles[tile_offset].get();
-  return tile;
-}
-
-std::shared_ptr<Tile> TileGroup::GetTileReference(
-    const oid_t tile_offset) const {
-  PL_ASSERT(tile_offset < tile_count);
-  return tiles[tile_offset];
 }
 
 double TileGroup::GetSchemaDifference(

@@ -391,16 +391,30 @@ void LogicalTile::AddColumn(const std::shared_ptr<storage::Tile> &base_tile,
 void LogicalTile::AddColumns(
     const std::shared_ptr<storage::TileGroup> &tile_group,
     const std::vector<oid_t> &column_ids) {
+
+  auto& column_map = tile_group->GetColumnMap();
+
   const int position_list_idx = 0;
+  oid_t base_tile_offset, tile_column_offset;
+  ColumnInfo cp;
+
   for (oid_t origin_column_id : column_ids) {
-    oid_t base_tile_offset, tile_column_id;
 
-    tile_group->LocateTileAndColumn(origin_column_id, base_tile_offset,
-                                    tile_column_id);
+    // Get the entry in the column map
+    auto entry = column_map.at(origin_column_id);
+    base_tile_offset = entry.first;
+    tile_column_offset = entry.second;
 
-    AddColumn(tile_group->GetTileReference(base_tile_offset), tile_column_id,
-              position_list_idx);
+    auto base_tile = tile_group->GetTileReference(base_tile_offset);
+
+    // Add column
+    cp.base_tile = base_tile;
+
+    cp.origin_column_id = tile_column_offset;
+    cp.position_list_idx = position_list_idx;
+    schema_.push_back(cp);
   }
+
 }
 
 /**
