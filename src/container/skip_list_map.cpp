@@ -98,6 +98,10 @@ bool SKIP_LIST_MAP_TYPE::IsEmpty() const{
 }
 
 // Explicit template instantiation
+template class SkipListMap<index::IntsKey<1>, ItemPointer, index::IntsComparatorRaw<1>>;
+template class SkipListMap<index::IntsKey<2>, ItemPointer, index::IntsComparatorRaw<2>>;
+template class SkipListMap<index::IntsKey<3>, ItemPointer, index::IntsComparatorRaw<3>>;
+template class SkipListMap<index::IntsKey<4>, ItemPointer, index::IntsComparatorRaw<4>>;
 
 template class SkipListMap<index::GenericKey<4>, ItemPointer, index::GenericComparatorRaw<4>>;
 template class SkipListMap<index::GenericKey<8>, ItemPointer, index::GenericComparatorRaw<8>>;

@@ -353,19 +353,51 @@ std::string BTREE_TEMPLATE_TYPE::GetTypeName() const {
 
 // Explicit template instantiation
 
-template class BTreeIndex<GenericKey<4>, ItemPointer, GenericComparator<4>,
-                          GenericEqualityChecker<4>>;
-template class BTreeIndex<GenericKey<8>, ItemPointer, GenericComparator<8>,
-                          GenericEqualityChecker<8>>;
-template class BTreeIndex<GenericKey<16>, ItemPointer, GenericComparator<16>,
-                          GenericEqualityChecker<16>>;
-template class BTreeIndex<GenericKey<64>, ItemPointer, GenericComparator<64>,
-                          GenericEqualityChecker<64>>;
-template class BTreeIndex<GenericKey<256>, ItemPointer,
-                          GenericComparator<256>, GenericEqualityChecker<256>>;
+// Ints key
+template class BTreeIndex<IntsKey<1>,
+ItemPointer,
+IntsComparator<1>,
+IntsEqualityChecker<1>>;
+template class BTreeIndex<IntsKey<2>,
+ItemPointer,
+IntsComparator<2>,
+IntsEqualityChecker<2>>;
+template class BTreeIndex<IntsKey<3>,
+ItemPointer,
+IntsComparator<3>,
+IntsEqualityChecker<3>>;
+template class BTreeIndex<IntsKey<4>,
+ItemPointer,
+IntsComparator<4>,
+IntsEqualityChecker<4>>;
 
-template class BTreeIndex<TupleKey, ItemPointer, TupleKeyComparator,
-                          TupleKeyEqualityChecker>;
+// Generic key
+template class BTreeIndex<GenericKey<4>,
+ItemPointer,
+GenericComparator<4>,
+GenericEqualityChecker<4>>;
+template class BTreeIndex<GenericKey<8>,
+ItemPointer,
+GenericComparator<8>,
+GenericEqualityChecker<8>>;
+template class BTreeIndex<GenericKey<16>,
+ItemPointer,
+GenericComparator<16>,
+GenericEqualityChecker<16>>;
+template class BTreeIndex<GenericKey<64>,
+ItemPointer,
+GenericComparator<64>,
+GenericEqualityChecker<64>>;
+template class BTreeIndex<GenericKey<256>,
+ItemPointer,
+GenericComparator<256>,
+GenericEqualityChecker<256>>;
+
+// Tuple key
+template class BTreeIndex<TupleKey,
+ItemPointer,
+TupleKeyComparator,
+TupleKeyEqualityChecker>;
 
 }  // End index namespace
 }  // End peloton namespace

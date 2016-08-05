@@ -245,11 +245,7 @@ BWTREE_INDEX_TYPE::GetTypeName() const {
   return "BWTree";
 }
 
-// NOTE: If ints key is used as an optimization just uncommend
-// the following in order to instanciation the template before it is
-// linked in linking stage
-
-/*
+// Ints key
 template class BWTreeIndex<IntsKey<1>,
                            ItemPointer,
                            IntsComparator<1>,
@@ -278,7 +274,6 @@ template class BWTreeIndex<IntsKey<4>,
                            IntsHasher<4>,
                            ItemPointerComparator,
                            ItemPointerHashFunc>;
-*/
 
 // Generic key
 template class BWTreeIndex<GenericKey<4>,

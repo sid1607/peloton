@@ -164,7 +164,8 @@ storage::DataTable *TransactionTestsUtil::CreateTable(
   key_schema->SetIndexedColumns(key_attrs);
 
   auto index_metadata = new index::IndexMetadata(
-      "primary_btree_index", index_oid, INDEX_TYPE_BTREE,
+      "primary_btree_index", index_oid,
+      INDEX_TYPE_BTREE,
       need_primary_index ? INDEX_CONSTRAINT_TYPE_PRIMARY_KEY
                          : INDEX_CONSTRAINT_TYPE_DEFAULT,
       tuple_schema, key_schema, key_attrs, unique);

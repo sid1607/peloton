@@ -32,6 +32,43 @@ Index::~Index() {
   delete pool;
 }
 
+IndexMetadata::IndexMetadata(std::string index_name,
+                             oid_t index_oid,
+                             IndexType method_type,
+                             IndexConstraintType index_type,
+                             const catalog::Schema *tuple_schema,
+                             const catalog::Schema *key_schema,
+                             const std::vector<oid_t>& key_attrs,
+                             bool unique_keys)
+: index_name(index_name),
+  index_oid(index_oid),
+  method_type(method_type),
+  index_type(index_type),
+  tuple_schema(tuple_schema),
+  key_schema(key_schema),
+  key_attrs(key_attrs),
+  unique_keys(unique_keys),
+  ints_only(false) {
+
+  // Determine if all the key schema attributes are of type INTEGER
+  // This is used for specializing the indexes
+  ints_only = true;
+  auto key_schema_length = key_schema->GetColumnCount();
+  for(oid_t key_schema_itr = 0;
+      key_schema_itr < key_schema_length;
+      key_schema_itr++){
+    auto key_schema_column = key_schema->GetColumn(key_schema_itr);
+    auto key_schema_column_type = key_schema_column.GetType();
+
+    // Check key_schema_column_type
+    if(key_schema_column_type != VALUE_TYPE_INTEGER){
+      ints_only = false;
+    }
+  }
+
+
+}
+
 IndexMetadata::~IndexMetadata() {
   // clean up key schema
   delete key_schema;
@@ -188,7 +225,7 @@ bool Index::ConstructLowerBoundTuple(
     const std::vector<peloton::Value> &values,
     const std::vector<oid_t> &key_column_ids,
     const std::vector<ExpressionType> &expr_types) {
-      
+
   auto schema = index_key->GetSchema();
   auto col_count = schema->GetColumnCount();
   bool all_constraints_equal = true;
@@ -196,28 +233,28 @@ bool Index::ConstructLowerBoundTuple(
   // Go over each column in the key tuple
   // Setting either the placeholder or the min value
   for (oid_t column_itr = 0; column_itr < col_count; column_itr++) {
-    
+
     // If the current column of the key has a predicate item
     // specified in the key column list
     auto key_column_itr =
         std::find(key_column_ids.begin(), key_column_ids.end(), column_itr);
-        
+
     bool placeholder = false;
     Value value;
 
     // This column is part of the key column ids
     if (key_column_itr != key_column_ids.end()) {
-      
+
       // This is the index into value list and expression type list
       auto offset = std::distance(key_column_ids.begin(), key_column_itr);
-      
+
       // If there is an "==" for the current column then we could fix the value
       // for index key
       // otherwise we know not all predicate items are "==", i.e. this is not
       // a point query and potentially requires an index scan
       if (expr_types[offset] == EXPRESSION_TYPE_COMPARE_EQUAL) {
         placeholder = true;
-        
+
         // This is the value object that will be filled into the index key
         value = values[offset];
       } else {
@@ -235,7 +272,7 @@ bool Index::ConstructLowerBoundTuple(
       index_key->SetValue(column_itr, value, GetPool());
     } else {
       auto value_type = schema->GetType(column_itr);
-      
+
       index_key->SetValue(column_itr,
                           Value::GetMinValue(value_type),
                           GetPool());
@@ -243,7 +280,7 @@ bool Index::ConstructLowerBoundTuple(
   } // for all columns in index key
 
   LOG_TRACE("Lower Bound Tuple :: %s", index_key->GetInfo().c_str());
-  
+
   // Corner case: If not all columns have a "==" relation then still
   // this is not a point query though all existing predicate items
   // are "=="
@@ -253,8 +290,8 @@ bool Index::ConstructLowerBoundTuple(
 }
 
 Index::Index(IndexMetadata *metadata) :
-    metadata(metadata),
-    indexed_tile_group_offset_(0) {
+        metadata(metadata),
+        indexed_tile_group_offset_(0) {
   index_oid = metadata->GetOid();
   // initialize counters
   lookup_counter = insert_counter = delete_counter = update_counter = 0;
