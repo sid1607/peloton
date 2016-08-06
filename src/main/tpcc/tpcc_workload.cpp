@@ -553,6 +553,8 @@ bool RunNewOrder() {
       }
 
       // incrementNextOrderId
+      // TODO: Uncomment this
+      /*
       LOG_TRACE(
           "incrementNextOrderId: UPDATE DISTRICT SET D_NEXT_O_ID = ? WHERE D_ID = "
           "? AND D_W_ID = ?");
@@ -600,6 +602,7 @@ bool RunNewOrder() {
         LOG_TRACE("incrementNextOrderId failed");
         return false;
       }
+      */
 
       LOG_TRACE(
           "createOrder: INSERT INTO ORDERS (O_ID, O_D_ID, O_W_ID, O_C_ID, "
@@ -722,6 +725,8 @@ bool RunNewOrder() {
           s_remote_cnt += 1;
         }
 
+        // TODO: Uncomment this
+        /*
         LOG_TRACE(
             "updateStock: UPDATE STOCK SET S_QUANTITY = ?, S_YTD = ?, S_ORDER_CNT "
             "= ?, S_REMOTE_CNT = ? WHERE S_I_ID = ? AND S_W_ID = ?");
@@ -779,6 +784,7 @@ bool RunNewOrder() {
           LOG_TRACE("updateStock failed");
           return false;
         }
+        */
 
         // the original benchmark requires check constraints.
         // however, we ignored here.
