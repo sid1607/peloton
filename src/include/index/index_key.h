@@ -171,9 +171,8 @@ class IntsKey {
     return retval;
   }
 
-  const storage::Tuple GetTupleForComparison(UNUSED_ATTRIBUTE const
-                                             catalog::Schema *key_schema) const {
-    throw IndexException("Tuple conversion not supported");
+  const storage::Tuple GetTupleForComparison(const catalog::Schema *key_schema) const {
+    return storage::Tuple(key_schema, data);
   }
 
   std::string Debug(const catalog::Schema *key_schema) const {

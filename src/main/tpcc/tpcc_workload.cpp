@@ -320,7 +320,7 @@ bool RunNewOrder() {
     OL_DIST_INFO) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", # o_id, d_id, w_id,
     ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info
     }
-  */
+   */
 
   LOG_TRACE("-------------------------------------");
 
@@ -425,7 +425,7 @@ bool RunNewOrder() {
   std::vector<expression::AbstractExpression *> runtime_keys;
 
   warehouse_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
-  warehouse_key_values.push_back(ValueFactory::GetSmallIntValue(warehouse_id));
+  warehouse_key_values.push_back(ValueFactory::GetIntegerValue(warehouse_id));
 
   auto warehouse_pkey_index =
       warehouse_table->GetIndexWithOid(warehouse_table_pkey_index_oid);
@@ -473,8 +473,8 @@ bool RunNewOrder() {
 
   district_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
   district_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
-  district_key_values.push_back(ValueFactory::GetTinyIntValue(district_id));
-  district_key_values.push_back(ValueFactory::GetSmallIntValue(warehouse_id));
+  district_key_values.push_back(ValueFactory::GetIntegerValue(district_id));
+  district_key_values.push_back(ValueFactory::GetIntegerValue(warehouse_id));
 
   auto district_pkey_index =
       district_table->GetIndexWithOid(district_table_pkey_index_oid);
@@ -516,335 +516,335 @@ bool RunNewOrder() {
 
   // Create and set up index scan executor
   std::vector<oid_t> customer_key_column_ids = {0, 1,
-                                                2};  // C_ID, C_D_ID, C_W_ID
-  std::vector<ExpressionType> customer_expr_types;
-  std::vector<Value> customer_key_values;
+      2};  // C_ID, C_D_ID, C_W_ID
+      std::vector<ExpressionType> customer_expr_types;
+      std::vector<Value> customer_key_values;
 
-  customer_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
-  customer_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
-  customer_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
-  customer_key_values.push_back(ValueFactory::GetIntegerValue(customer_id));
-  customer_key_values.push_back(ValueFactory::GetIntegerValue(district_id));
-  customer_key_values.push_back(ValueFactory::GetIntegerValue(warehouse_id));
+      customer_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
+      customer_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
+      customer_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
+      customer_key_values.push_back(ValueFactory::GetIntegerValue(customer_id));
+      customer_key_values.push_back(ValueFactory::GetIntegerValue(district_id));
+      customer_key_values.push_back(ValueFactory::GetIntegerValue(warehouse_id));
 
-  auto customer_pkey_index =
-      customer_table->GetIndexWithOid(customer_table_pkey_index_oid);
+      auto customer_pkey_index =
+          customer_table->GetIndexWithOid(customer_table_pkey_index_oid);
 
-  planner::IndexScanPlan::IndexScanDesc customer_index_scan_desc(
-      customer_pkey_index, customer_key_column_ids, customer_expr_types,
-      customer_key_values, runtime_keys);
+      planner::IndexScanPlan::IndexScanDesc customer_index_scan_desc(
+          customer_pkey_index, customer_key_column_ids, customer_expr_types,
+          customer_key_values, runtime_keys);
 
-  // Create plan node.
-  planner::IndexScanPlan customer_index_scan_node(
-      customer_table, predicate, customer_column_ids, customer_index_scan_desc);
-  executor::IndexScanExecutor customer_index_scan_executor(
-      &customer_index_scan_node, context.get());
+      // Create plan node.
+      planner::IndexScanPlan customer_index_scan_node(
+          customer_table, predicate, customer_column_ids, customer_index_scan_desc);
+      executor::IndexScanExecutor customer_index_scan_executor(
+          &customer_index_scan_node, context.get());
 
-  auto gc_lists_values = ExecuteReadTest(&customer_index_scan_executor);
+      auto gc_lists_values = ExecuteReadTest(&customer_index_scan_executor);
 
-  if (txn->GetResult() != Result::RESULT_SUCCESS) {
-    txn_manager.AbortTransaction();
-    LOG_ERROR("getCustomer failed");
-    return false;
-  }
-
-  if (gc_lists_values.size() != 1) {
-    assert(false);
-  }
-
-  // incrementNextOrderId
-  LOG_TRACE(
-      "incrementNextOrderId: UPDATE DISTRICT SET D_NEXT_O_ID = ? WHERE D_ID = "
-      "? AND D_W_ID = ?");
-
-  std::vector<oid_t> district_update_column_ids = {10};  // D_NEXT_O_ID
-
-  // Create plan node.
-  planner::IndexScanPlan district_update_index_scan_node(
-      district_table, predicate, district_update_column_ids,
-      district_index_scan_desc);
-  executor::IndexScanExecutor district_update_index_scan_executor(
-      &district_update_index_scan_node, context.get());
-
-  int district_update_value = ValuePeeker::PeekAsInteger(d_next_o_id) + 1;
-
-  TargetList district_target_list;
-  DirectMapList district_direct_map_list;
-
-  // Update the last attribute
-  for (oid_t col_itr = 0; col_itr < 10; col_itr++) {
-    district_direct_map_list.emplace_back(col_itr,
-                                          std::pair<oid_t, oid_t>(0, col_itr));
-  }
-
-  Value district_update_val =
-      ValueFactory::GetIntegerValue(district_update_value);
-  district_target_list.emplace_back(
-      10,
-      expression::ExpressionUtil::ConstantValueFactory(district_update_val));
-
-  std::unique_ptr<const planner::ProjectInfo> district_project_info(
-      new planner::ProjectInfo(std::move(district_target_list),
-                               std::move(district_direct_map_list)));
-  planner::UpdatePlan district_update_node(district_table,
-                                           std::move(district_project_info));
-
-  executor::UpdateExecutor district_update_executor(&district_update_node,
-                                                    context.get());
-  district_update_executor.AddChild(&district_update_index_scan_executor);
-
-  ExecuteUpdateTest(&district_update_executor);
-
-  if (txn->GetResult() != Result::RESULT_SUCCESS) {
-    txn_manager.AbortTransaction();
-    LOG_TRACE("incrementNextOrderId failed");
-    return false;
-  }
-
-  LOG_TRACE(
-      "createOrder: INSERT INTO ORDERS (O_ID, O_D_ID, O_W_ID, O_C_ID, "
-      "O_ENTRY_D, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL)");
-
-  std::unique_ptr<storage::Tuple> orders_tuple(
-      new storage::Tuple(orders_table->GetSchema(), true));
-
-  // O_ID
-  orders_tuple->SetValue(0, d_next_o_id, nullptr);
-  // O_C_ID
-  orders_tuple->SetValue(1, ValueFactory::GetIntegerValue(customer_id),
-                         nullptr);
-  // O_D_ID
-  orders_tuple->SetValue(2, ValueFactory::GetTinyIntValue(district_id),
-                         nullptr);
-  // O_W_ID
-  orders_tuple->SetValue(3, ValueFactory::GetSmallIntValue(warehouse_id),
-                         nullptr);
-  // O_ENTRY_D
-  // auto o_entry_d = GetTimeStamp();
-  orders_tuple->SetValue(4, ValueFactory::GetTimestampValue(1), nullptr);
-  // O_CARRIER_ID
-  orders_tuple->SetValue(5, ValueFactory::GetIntegerValue(0), nullptr);
-  // O_OL_CNT
-  orders_tuple->SetValue(6, ValueFactory::GetIntegerValue(o_ol_cnt), nullptr);
-  // O_ALL_LOCAL
-  orders_tuple->SetValue(7, ValueFactory::GetIntegerValue(o_all_local),
-                         nullptr);
-
-  planner::InsertPlan orders_node(orders_table, std::move(orders_tuple));
-  executor::InsertExecutor orders_executor(&orders_node, context.get());
-  orders_executor.Execute();
-
-  LOG_TRACE(
-      "createNewOrder: INSERT INTO NEW_ORDER (NO_O_ID, NO_D_ID, NO_W_ID) "
-      "VALUES (?, ?, ?)");
-  std::unique_ptr<storage::Tuple> new_order_tuple(
-      new storage::Tuple(new_order_table->GetSchema(), true));
-
-  // NO_O_ID
-  new_order_tuple->SetValue(0, d_next_o_id, nullptr);
-  // NO_D_ID
-  new_order_tuple->SetValue(1, ValueFactory::GetTinyIntValue(district_id),
-                            nullptr);
-  // NO_W_ID
-  new_order_tuple->SetValue(2, ValueFactory::GetSmallIntValue(warehouse_id),
-                            nullptr);
-
-  planner::InsertPlan new_order_node(new_order_table,
-                                     std::move(new_order_tuple));
-  executor::InsertExecutor new_order_executor(&new_order_node, context.get());
-  new_order_executor.Execute();
-
-  for (size_t i = 0; i < i_ids.size(); ++i) {
-    int item_id = i_ids.at(i);
-    int ol_w_id = ol_w_ids.at(i);
-    int ol_qty = ol_qtys.at(i);
-
-    LOG_TRACE(
-        "getStockInfo: SELECT S_QUANTITY, S_DATA, S_YTD, S_ORDER_CNT, "
-        "S_REMOTE_CNT, S_DIST_? FROM STOCK WHERE S_I_ID = ? AND S_W_ID = ?");
-
-    // S_QUANTITY, S_DIST_%02d, S_YTD, S_ORDER_CNT, S_REMOTE_CNT, S_DATA
-    std::vector<oid_t> stock_column_ids = {2, oid_t(3 + district_id), 13, 14,
-                                           15, 16};
-
-    // Create and set up index scan executor
-    std::vector<oid_t> stock_key_column_ids = {0, 1};  // S_I_ID, S_W_ID
-    std::vector<ExpressionType> stock_expr_types;
-    std::vector<Value> stock_key_values;
-    std::vector<expression::AbstractExpression *> runtime_keys;
-
-    stock_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
-    stock_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
-    stock_key_values.push_back(ValueFactory::GetTinyIntValue(item_id));
-    stock_key_values.push_back(ValueFactory::GetSmallIntValue(ol_w_id));
-
-    auto stock_pkey_index =
-        stock_table->GetIndexWithOid(stock_table_pkey_index_oid);
-
-    planner::IndexScanPlan::IndexScanDesc stock_index_scan_desc(
-        stock_pkey_index, stock_key_column_ids, stock_expr_types,
-        stock_key_values, runtime_keys);
-
-    // Create plan node.
-    auto predicate = nullptr;
-
-    planner::IndexScanPlan stock_index_scan_node(
-        stock_table, predicate, stock_column_ids, stock_index_scan_desc);
-
-    executor::IndexScanExecutor stock_index_scan_executor(
-        &stock_index_scan_node, context.get());
-
-    auto gsi_lists_values = ExecuteReadTest(&stock_index_scan_executor);
-
-    if (txn->GetResult() != Result::RESULT_SUCCESS) {
-      txn_manager.AbortTransaction();
-      LOG_ERROR("getStockInfo failed");
-      return false;
-    }
-
-    if (gsi_lists_values.size() != 1) {
-      assert(false);
-    }
-
-    int s_quantity = ValuePeeker::PeekAsInteger(gsi_lists_values[0][0]);
-
-    if (s_quantity >= ol_qty + 10) {
-      s_quantity = s_quantity - ol_qty;
-    } else {
-      s_quantity = s_quantity + 91 - ol_qty;
-    }
-
-    Value s_data = gsi_lists_values[0][1];
-
-    int s_remote_cnt = ValuePeeker::PeekAsInteger(gsi_lists_values[0][4]);
-
-    if (ol_w_id != warehouse_id) {
-      s_remote_cnt += 1;
-    }
-
-    LOG_TRACE(
-        "updateStock: UPDATE STOCK SET S_QUANTITY = ?, S_YTD = ?, S_ORDER_CNT "
-        "= ?, S_REMOTE_CNT = ? WHERE S_I_ID = ? AND S_W_ID = ?");
-
-    std::vector<oid_t> stock_update_column_ids = {
-        2, 13, 14, 15};  // S_QUANTITY, S_YTD, S_ORDER_CNT, S_REMOTE_CNT
-
-    int s_ytd = ValuePeeker::PeekAsInteger(gsi_lists_values[0][2]) + ol_qty;
-    int s_order_cnt = ValuePeeker::PeekAsInteger(gsi_lists_values[0][3]) + 1;
-
-    // Create plan node.
-    planner::IndexScanPlan stock_update_index_scan_node(
-        stock_table, predicate, stock_update_column_ids, stock_index_scan_desc);
-    executor::IndexScanExecutor stock_update_index_scan_executor(
-        &stock_update_index_scan_node, context.get());
-
-    TargetList stock_target_list;
-    DirectMapList stock_direct_map_list;
-
-    // Update the last attribute
-    for (oid_t col_itr = 0; col_itr < 17; col_itr++) {
-      if (col_itr != 2 && col_itr != 13 && col_itr != 14 && col_itr != 15) {
-        stock_direct_map_list.emplace_back(col_itr,
-                                           std::pair<oid_t, oid_t>(0, col_itr));
+      if (txn->GetResult() != Result::RESULT_SUCCESS) {
+        txn_manager.AbortTransaction();
+        LOG_ERROR("getCustomer failed");
+        return false;
       }
-    }
 
-    stock_target_list.emplace_back(
-        2, expression::ExpressionUtil::ConstantValueFactory(
-               ValueFactory::GetIntegerValue(s_quantity)));
-    stock_target_list.emplace_back(
-        13, expression::ExpressionUtil::ConstantValueFactory(
+      if (gc_lists_values.size() != 1) {
+        assert(false);
+      }
+
+      // incrementNextOrderId
+      LOG_TRACE(
+          "incrementNextOrderId: UPDATE DISTRICT SET D_NEXT_O_ID = ? WHERE D_ID = "
+          "? AND D_W_ID = ?");
+
+      std::vector<oid_t> district_update_column_ids = {10};  // D_NEXT_O_ID
+
+      // Create plan node.
+      planner::IndexScanPlan district_update_index_scan_node(
+          district_table, predicate, district_update_column_ids,
+          district_index_scan_desc);
+      executor::IndexScanExecutor district_update_index_scan_executor(
+          &district_update_index_scan_node, context.get());
+
+      int district_update_value = ValuePeeker::PeekAsInteger(d_next_o_id) + 1;
+
+      TargetList district_target_list;
+      DirectMapList district_direct_map_list;
+
+      // Update the last attribute
+      for (oid_t col_itr = 0; col_itr < 10; col_itr++) {
+        district_direct_map_list.emplace_back(col_itr,
+                                              std::pair<oid_t, oid_t>(0, col_itr));
+      }
+
+      Value district_update_val =
+          ValueFactory::GetIntegerValue(district_update_value);
+      district_target_list.emplace_back(
+          10,
+          expression::ExpressionUtil::ConstantValueFactory(district_update_val));
+
+      std::unique_ptr<const planner::ProjectInfo> district_project_info(
+          new planner::ProjectInfo(std::move(district_target_list),
+                                   std::move(district_direct_map_list)));
+      planner::UpdatePlan district_update_node(district_table,
+                                               std::move(district_project_info));
+
+      executor::UpdateExecutor district_update_executor(&district_update_node,
+                                                        context.get());
+      district_update_executor.AddChild(&district_update_index_scan_executor);
+
+      ExecuteUpdateTest(&district_update_executor);
+
+      if (txn->GetResult() != Result::RESULT_SUCCESS) {
+        txn_manager.AbortTransaction();
+        LOG_TRACE("incrementNextOrderId failed");
+        return false;
+      }
+
+      LOG_TRACE(
+          "createOrder: INSERT INTO ORDERS (O_ID, O_D_ID, O_W_ID, O_C_ID, "
+          "O_ENTRY_D, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL)");
+
+      std::unique_ptr<storage::Tuple> orders_tuple(
+          new storage::Tuple(orders_table->GetSchema(), true));
+
+      // O_ID
+      orders_tuple->SetValue(0, d_next_o_id, nullptr);
+      // O_C_ID
+      orders_tuple->SetValue(1, ValueFactory::GetIntegerValue(customer_id),
+                             nullptr);
+      // O_D_ID
+      orders_tuple->SetValue(2, ValueFactory::GetIntegerValue(district_id),
+                             nullptr);
+      // O_W_ID
+      orders_tuple->SetValue(3, ValueFactory::GetIntegerValue(warehouse_id),
+                             nullptr);
+      // O_ENTRY_D
+      // auto o_entry_d = GetTimeStamp();
+      orders_tuple->SetValue(4, ValueFactory::GetTimestampValue(1), nullptr);
+      // O_CARRIER_ID
+      orders_tuple->SetValue(5, ValueFactory::GetIntegerValue(0), nullptr);
+      // O_OL_CNT
+      orders_tuple->SetValue(6, ValueFactory::GetIntegerValue(o_ol_cnt), nullptr);
+      // O_ALL_LOCAL
+      orders_tuple->SetValue(7, ValueFactory::GetIntegerValue(o_all_local),
+                             nullptr);
+
+      planner::InsertPlan orders_node(orders_table, std::move(orders_tuple));
+      executor::InsertExecutor orders_executor(&orders_node, context.get());
+      orders_executor.Execute();
+
+      LOG_TRACE(
+          "createNewOrder: INSERT INTO NEW_ORDER (NO_O_ID, NO_D_ID, NO_W_ID) "
+          "VALUES (?, ?, ?)");
+      std::unique_ptr<storage::Tuple> new_order_tuple(
+          new storage::Tuple(new_order_table->GetSchema(), true));
+
+      // NO_O_ID
+      new_order_tuple->SetValue(0, d_next_o_id, nullptr);
+      // NO_D_ID
+      new_order_tuple->SetValue(1, ValueFactory::GetIntegerValue(district_id),
+                                nullptr);
+      // NO_W_ID
+      new_order_tuple->SetValue(2, ValueFactory::GetIntegerValue(warehouse_id),
+                                nullptr);
+
+      planner::InsertPlan new_order_node(new_order_table,
+                                         std::move(new_order_tuple));
+      executor::InsertExecutor new_order_executor(&new_order_node, context.get());
+      new_order_executor.Execute();
+
+      for (size_t i = 0; i < i_ids.size(); ++i) {
+        int item_id = i_ids.at(i);
+        int ol_w_id = ol_w_ids.at(i);
+        int ol_qty = ol_qtys.at(i);
+
+        LOG_TRACE(
+            "getStockInfo: SELECT S_QUANTITY, S_DATA, S_YTD, S_ORDER_CNT, "
+            "S_REMOTE_CNT, S_DIST_? FROM STOCK WHERE S_I_ID = ? AND S_W_ID = ?");
+
+        // S_QUANTITY, S_DIST_%02d, S_YTD, S_ORDER_CNT, S_REMOTE_CNT, S_DATA
+        std::vector<oid_t> stock_column_ids = {2, oid_t(3 + district_id), 13, 14,
+            15, 16};
+
+        // Create and set up index scan executor
+        std::vector<oid_t> stock_key_column_ids = {0, 1};  // S_I_ID, S_W_ID
+        std::vector<ExpressionType> stock_expr_types;
+        std::vector<Value> stock_key_values;
+        std::vector<expression::AbstractExpression *> runtime_keys;
+
+        stock_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
+        stock_expr_types.push_back(ExpressionType::EXPRESSION_TYPE_COMPARE_EQUAL);
+        stock_key_values.push_back(ValueFactory::GetIntegerValue(item_id));
+        stock_key_values.push_back(ValueFactory::GetIntegerValue(ol_w_id));
+
+        auto stock_pkey_index =
+            stock_table->GetIndexWithOid(stock_table_pkey_index_oid);
+
+        planner::IndexScanPlan::IndexScanDesc stock_index_scan_desc(
+            stock_pkey_index, stock_key_column_ids, stock_expr_types,
+            stock_key_values, runtime_keys);
+
+        // Create plan node.
+        auto predicate = nullptr;
+
+        planner::IndexScanPlan stock_index_scan_node(
+            stock_table, predicate, stock_column_ids, stock_index_scan_desc);
+
+        executor::IndexScanExecutor stock_index_scan_executor(
+            &stock_index_scan_node, context.get());
+
+        auto gsi_lists_values = ExecuteReadTest(&stock_index_scan_executor);
+
+        if (txn->GetResult() != Result::RESULT_SUCCESS) {
+          txn_manager.AbortTransaction();
+          LOG_ERROR("getStockInfo failed");
+          return false;
+        }
+
+        if (gsi_lists_values.size() != 1) {
+          assert(false);
+        }
+
+        int s_quantity = ValuePeeker::PeekAsInteger(gsi_lists_values[0][0]);
+
+        if (s_quantity >= ol_qty + 10) {
+          s_quantity = s_quantity - ol_qty;
+        } else {
+          s_quantity = s_quantity + 91 - ol_qty;
+        }
+
+        Value s_data = gsi_lists_values[0][1];
+
+        int s_remote_cnt = ValuePeeker::PeekAsInteger(gsi_lists_values[0][4]);
+
+        if (ol_w_id != warehouse_id) {
+          s_remote_cnt += 1;
+        }
+
+        LOG_TRACE(
+            "updateStock: UPDATE STOCK SET S_QUANTITY = ?, S_YTD = ?, S_ORDER_CNT "
+            "= ?, S_REMOTE_CNT = ? WHERE S_I_ID = ? AND S_W_ID = ?");
+
+        std::vector<oid_t> stock_update_column_ids = {
+            2, 13, 14, 15};  // S_QUANTITY, S_YTD, S_ORDER_CNT, S_REMOTE_CNT
+
+        int s_ytd = ValuePeeker::PeekAsInteger(gsi_lists_values[0][2]) + ol_qty;
+        int s_order_cnt = ValuePeeker::PeekAsInteger(gsi_lists_values[0][3]) + 1;
+
+        // Create plan node.
+        planner::IndexScanPlan stock_update_index_scan_node(
+            stock_table, predicate, stock_update_column_ids, stock_index_scan_desc);
+        executor::IndexScanExecutor stock_update_index_scan_executor(
+            &stock_update_index_scan_node, context.get());
+
+        TargetList stock_target_list;
+        DirectMapList stock_direct_map_list;
+
+        // Update the last attribute
+        for (oid_t col_itr = 0; col_itr < 17; col_itr++) {
+          if (col_itr != 2 && col_itr != 13 && col_itr != 14 && col_itr != 15) {
+            stock_direct_map_list.emplace_back(col_itr,
+                                               std::pair<oid_t, oid_t>(0, col_itr));
+          }
+        }
+
+        stock_target_list.emplace_back(
+            2, expression::ExpressionUtil::ConstantValueFactory(
+                ValueFactory::GetIntegerValue(s_quantity)));
+        stock_target_list.emplace_back(
+            13, expression::ExpressionUtil::ConstantValueFactory(
                 ValueFactory::GetIntegerValue(s_ytd)));
-    stock_target_list.emplace_back(
-        14, expression::ExpressionUtil::ConstantValueFactory(
+        stock_target_list.emplace_back(
+            14, expression::ExpressionUtil::ConstantValueFactory(
                 ValueFactory::GetIntegerValue(s_order_cnt)));
-    stock_target_list.emplace_back(
-        15, expression::ExpressionUtil::ConstantValueFactory(
+        stock_target_list.emplace_back(
+            15, expression::ExpressionUtil::ConstantValueFactory(
                 ValueFactory::GetIntegerValue(s_remote_cnt)));
 
-    std::unique_ptr<const planner::ProjectInfo> stock_project_info(
-        new planner::ProjectInfo(std::move(stock_target_list),
-                                 std::move(stock_direct_map_list)));
-    planner::UpdatePlan stock_update_node(stock_table,
-                                          std::move(stock_project_info));
+        std::unique_ptr<const planner::ProjectInfo> stock_project_info(
+            new planner::ProjectInfo(std::move(stock_target_list),
+                                     std::move(stock_direct_map_list)));
+        planner::UpdatePlan stock_update_node(stock_table,
+                                              std::move(stock_project_info));
 
-    executor::UpdateExecutor stock_update_executor(&stock_update_node,
-                                                   context.get());
-    stock_update_executor.AddChild(&stock_update_index_scan_executor);
+        executor::UpdateExecutor stock_update_executor(&stock_update_node,
+                                                       context.get());
+        stock_update_executor.AddChild(&stock_update_index_scan_executor);
 
-    ExecuteUpdateTest(&stock_update_executor);
+        ExecuteUpdateTest(&stock_update_executor);
 
-    if (txn->GetResult() != Result::RESULT_SUCCESS) {
-      txn_manager.AbortTransaction();
-      LOG_TRACE("updateStock failed");
-      return false;
-    }
+        if (txn->GetResult() != Result::RESULT_SUCCESS) {
+          txn_manager.AbortTransaction();
+          LOG_TRACE("updateStock failed");
+          return false;
+        }
 
-    // the original benchmark requires check constraints.
-    // however, we ignored here.
-    // it does not influence the performance.
-    // if i_data.find(constants.ORIGINAL_STRING) != -1 and s_data.find(constants.ORIGINAL_STRING) != -1:
-    // brand_generic = 'B'
-    // else:
-    // brand_generic = 'G'
+        // the original benchmark requires check constraints.
+        // however, we ignored here.
+        // it does not influence the performance.
+        // if i_data.find(constants.ORIGINAL_STRING) != -1 and s_data.find(constants.ORIGINAL_STRING) != -1:
+        // brand_generic = 'B'
+        // else:
+        // brand_generic = 'G'
 
-    LOG_TRACE(
-        "createOrderLine: INSERT INTO ORDER_LINE (OL_O_ID, OL_D_ID, OL_W_ID, "
-        "OL_NUMBER, OL_I_ID, OL_SUPPLY_W_ID, OL_DELIVERY_D, OL_QUANTITY, "
-        "OL_AMOUNT, OL_DIST_INFO) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        LOG_TRACE(
+            "createOrderLine: INSERT INTO ORDER_LINE (OL_O_ID, OL_D_ID, OL_W_ID, "
+            "OL_NUMBER, OL_I_ID, OL_SUPPLY_W_ID, OL_DELIVERY_D, OL_QUANTITY, "
+            "OL_AMOUNT, OL_DIST_INFO) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-    std::unique_ptr<storage::Tuple> order_line_tuple(
-        new storage::Tuple(order_line_table->GetSchema(), true));
+        std::unique_ptr<storage::Tuple> order_line_tuple(
+            new storage::Tuple(order_line_table->GetSchema(), true));
 
-    // OL_O_ID
-    order_line_tuple->SetValue(0, d_next_o_id, nullptr);
-    // OL_D_ID
-    order_line_tuple->SetValue(1, ValueFactory::GetTinyIntValue(district_id),
-                               nullptr);
-    // OL_W_ID
-    order_line_tuple->SetValue(2, ValueFactory::GetSmallIntValue(warehouse_id),
-                               nullptr);
-    // OL_NUMBER
-    order_line_tuple->SetValue(3, ValueFactory::GetIntegerValue(i), nullptr);
-    // OL_I_ID
-    order_line_tuple->SetValue(4, ValueFactory::GetIntegerValue(item_id),
-                               nullptr);
-    // OL_SUPPLY_W_ID
-    order_line_tuple->SetValue(5, ValueFactory::GetSmallIntValue(ol_w_id),
-                               nullptr);
-    // OL_DELIVERY_D
-    order_line_tuple->SetValue(6, ValueFactory::GetTimestampValue(1), nullptr);
-    // OL_QUANTITY
-    order_line_tuple->SetValue(7, ValueFactory::GetIntegerValue(ol_qty),
-                               nullptr);
-    // OL_AMOUNT
-    // TODO: workaround!!! I don't know how to get float from Value.
-    order_line_tuple->SetValue(8, ValueFactory::GetDoubleValue(0), nullptr);
-    // OL_DIST_INFO
-    order_line_tuple->SetValue(9, s_data, nullptr);
+        // OL_O_ID
+        order_line_tuple->SetValue(0, d_next_o_id, nullptr);
+        // OL_D_ID
+        order_line_tuple->SetValue(1, ValueFactory::GetIntegerValue(district_id),
+                                   nullptr);
+        // OL_W_ID
+        order_line_tuple->SetValue(2, ValueFactory::GetIntegerValue(warehouse_id),
+                                   nullptr);
+        // OL_NUMBER
+        order_line_tuple->SetValue(3, ValueFactory::GetIntegerValue(i), nullptr);
+        // OL_I_ID
+        order_line_tuple->SetValue(4, ValueFactory::GetIntegerValue(item_id),
+                                   nullptr);
+        // OL_SUPPLY_W_ID
+        order_line_tuple->SetValue(5, ValueFactory::GetIntegerValue(ol_w_id),
+                                   nullptr);
+        // OL_DELIVERY_D
+        order_line_tuple->SetValue(6, ValueFactory::GetTimestampValue(1), nullptr);
+        // OL_QUANTITY
+        order_line_tuple->SetValue(7, ValueFactory::GetIntegerValue(ol_qty),
+                                   nullptr);
+        // OL_AMOUNT
+        // TODO: workaround!!! I don't know how to get float from Value.
+        order_line_tuple->SetValue(8, ValueFactory::GetDoubleValue(0), nullptr);
+        // OL_DIST_INFO
+        order_line_tuple->SetValue(9, s_data, nullptr);
 
-    planner::InsertPlan order_line_node(order_line_table,
-                                        std::move(order_line_tuple));
-    executor::InsertExecutor order_line_executor(&order_line_node,
-                                                 context.get());
-    order_line_executor.Execute();
-  }
+        planner::InsertPlan order_line_node(order_line_table,
+                                            std::move(order_line_tuple));
+        executor::InsertExecutor order_line_executor(&order_line_node,
+                                                     context.get());
+        order_line_executor.Execute();
+      }
 
-  // transaction passed execution.
-  assert(txn->GetResult() == Result::RESULT_SUCCESS);
+      // transaction passed execution.
+      assert(txn->GetResult() == Result::RESULT_SUCCESS);
 
-  auto result = txn_manager.CommitTransaction();
+      auto result = txn_manager.CommitTransaction();
 
-  if (result == Result::RESULT_SUCCESS) {
-    LOG_TRACE("D_TAX: %s", gd_lists_values[0][0].GetInfo().c_str());
-    LOG_TRACE("D_NEXT_O_ID: %s", gd_lists_values[0][1].GetInfo().c_str());
-    LOG_TRACE("transaction committed");
-    return true;
-  } else {
-    PL_ASSERT(result == Result::RESULT_ABORTED ||
-              result == Result::RESULT_FAILURE);
-    return false;
-  }
+      if (result == Result::RESULT_SUCCESS) {
+        LOG_TRACE("D_TAX: %s", gd_lists_values[0][0].GetInfo().c_str());
+        LOG_TRACE("D_NEXT_O_ID: %s", gd_lists_values[0][1].GetInfo().c_str());
+        LOG_TRACE("transaction committed");
+        return true;
+      } else {
+        PL_ASSERT(result == Result::RESULT_ABORTED ||
+                  result == Result::RESULT_FAILURE);
+        return false;
+      }
 
 }
 

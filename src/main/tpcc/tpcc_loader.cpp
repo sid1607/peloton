@@ -162,7 +162,7 @@ void CreateWarehouseTable() {
   std::vector<catalog::Column> warehouse_columns;
 
   auto w_id_column =
-      catalog::Column(VALUE_TYPE_SMALLINT, GetTypeSize(VALUE_TYPE_SMALLINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "W_ID", is_inlined);
   warehouse_columns.push_back(w_id_column);
   auto w_name_column = catalog::Column(
@@ -240,10 +240,10 @@ void CreateDistrictTable() {
   std::vector<catalog::Column> district_columns;
 
   auto d_id_column = catalog::Column(
-      VALUE_TYPE_TINYINT, GetTypeSize(VALUE_TYPE_TINYINT), "D_ID", is_inlined);
+      VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER), "D_ID", is_inlined);
   district_columns.push_back(d_id_column);
   auto d_w_id_column =
-      catalog::Column(VALUE_TYPE_SMALLINT, GetTypeSize(VALUE_TYPE_SMALLINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "D_W_ID", is_inlined);
   district_columns.push_back(d_w_id_column);
   auto d_name_column = catalog::Column(VALUE_TYPE_VARCHAR, district_name_length,
@@ -399,11 +399,11 @@ void CreateCustomerTable() {
       VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER), "C_ID", is_inlined);
   customer_columns.push_back(c_id_column);
   auto c_d_id_column =
-      catalog::Column(VALUE_TYPE_TINYINT, GetTypeSize(VALUE_TYPE_TINYINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "C_D_ID", is_inlined);
   customer_columns.push_back(c_d_id_column);
   auto c_w_id_column =
-      catalog::Column(VALUE_TYPE_SMALLINT, GetTypeSize(VALUE_TYPE_SMALLINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "C_W_ID", is_inlined);
   customer_columns.push_back(c_w_id_column);
   auto c_first_name_column =
@@ -533,19 +533,19 @@ void CreateHistoryTable() {
                       "H_C_ID", is_inlined);
   history_columns.push_back(h_c_id_column);
   auto h_c_d_id_column =
-      catalog::Column(VALUE_TYPE_TINYINT, GetTypeSize(VALUE_TYPE_TINYINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "H_C_D_ID", is_inlined);
   history_columns.push_back(h_c_d_id_column);
   auto h_c_w_id_column =
-      catalog::Column(VALUE_TYPE_SMALLINT, GetTypeSize(VALUE_TYPE_SMALLINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "H_C_W_ID", is_inlined);
   history_columns.push_back(h_c_w_id_column);
   auto h_d_id_column =
-      catalog::Column(VALUE_TYPE_TINYINT, GetTypeSize(VALUE_TYPE_TINYINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "H_D_ID", is_inlined);
   history_columns.push_back(h_d_id_column);
   auto h_w_id_column =
-      catalog::Column(VALUE_TYPE_SMALLINT, GetTypeSize(VALUE_TYPE_SMALLINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "H_W_ID", is_inlined);
   history_columns.push_back(h_w_id_column);
   auto h_date_column =
@@ -602,7 +602,7 @@ void CreateStockTable() {
                       "S_I_ID", is_inlined);
   stock_columns.push_back(s_i_id_column);
   auto s_w_id_column =
-      catalog::Column(VALUE_TYPE_SMALLINT, GetTypeSize(VALUE_TYPE_SMALLINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "S_W_ID", is_inlined);
   stock_columns.push_back(s_w_id_column);
   auto s_quantity_column =
@@ -710,11 +710,11 @@ void CreateOrdersTable() {
                       "O_C_ID", is_inlined);
   orders_columns.push_back(o_c_id_column);
   auto o_d_id_column =
-      catalog::Column(VALUE_TYPE_TINYINT, GetTypeSize(VALUE_TYPE_TINYINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "O_D_ID", is_inlined);
   orders_columns.push_back(o_d_id_column);
   auto o_w_id_column =
-      catalog::Column(VALUE_TYPE_SMALLINT, GetTypeSize(VALUE_TYPE_SMALLINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "O_W_ID", is_inlined);
   orders_columns.push_back(o_w_id_column);
   auto o_entry_d_column =
@@ -793,11 +793,11 @@ void CreateNewOrderTable() {
                       "NO_O_ID", is_inlined);
   new_order_columns.push_back(no_o_id_column);
   auto no_d_id_column =
-      catalog::Column(VALUE_TYPE_TINYINT, GetTypeSize(VALUE_TYPE_TINYINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "NO_D_ID", is_inlined);
   new_order_columns.push_back(no_d_id_column);
   auto no_w_id_column =
-      catalog::Column(VALUE_TYPE_SMALLINT, GetTypeSize(VALUE_TYPE_SMALLINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "NO_W_ID", is_inlined);
   new_order_columns.push_back(no_w_id_column);
 
@@ -857,11 +857,11 @@ void CreateOrderLineTable() {
                       "OL_O_ID", is_inlined);
   order_line_columns.push_back(ol_o_id_column);
   auto ol_d_id_column =
-      catalog::Column(VALUE_TYPE_TINYINT, GetTypeSize(VALUE_TYPE_TINYINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "OL_D_ID", is_inlined);
   order_line_columns.push_back(ol_d_id_column);
   auto ol_w_id_column =
-      catalog::Column(VALUE_TYPE_SMALLINT, GetTypeSize(VALUE_TYPE_SMALLINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "OL_W_ID", is_inlined);
   order_line_columns.push_back(ol_w_id_column);
   auto ol_number_column =
@@ -873,7 +873,7 @@ void CreateOrderLineTable() {
                       "OL_I_ID", is_inlined);
   order_line_columns.push_back(ol_i_id_column);
   auto ol_supply_w_id_column =
-      catalog::Column(VALUE_TYPE_SMALLINT, GetTypeSize(VALUE_TYPE_SMALLINT),
+      catalog::Column(VALUE_TYPE_INTEGER, GetTypeSize(VALUE_TYPE_INTEGER),
                       "OL_SUPPLY_W_ID", is_inlined);
   order_line_columns.push_back(ol_supply_w_id_column);
   auto ol_delivery_d_column =

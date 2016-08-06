@@ -39,6 +39,9 @@ Index *IndexFactory::GetInstance(IndexMetadata *metadata) {
   if (key_size > sizeof(int64_t) * 4) {
     ints_only = false;
   }
+
+  // TODO: Disable ints only for now
+  ints_only = false;
   LOG_TRACE("Ints Only : %d", ints_only);
 
   if (index_type == INDEX_TYPE_BTREE) {
