@@ -309,3 +309,6 @@ docs/dev
 
 # Third party
 third_party/gflags/
+
+# Perf
+perf.data
