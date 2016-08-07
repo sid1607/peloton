@@ -78,7 +78,7 @@ void ValidateTransactionCount(const configuration &state) {
   LOG_INFO("%s : %d", "transaction_count", state.transaction_count);
 }
 
-void ValidateIndex(const configuration &state) {
+void ValidateIndexType(const configuration &state) {
   if (state.index_type != INDEX_TYPE_BWTREE &&
       state.index_type != INDEX_TYPE_HASH &&
       state.index_type != INDEX_TYPE_SKIPLIST) {
@@ -144,7 +144,7 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   ValidateWarehouseCount(state);
   ValidateDuration(state);
   ValidateTransactionCount(state);
-  ValidateIndex(state);
+  ValidateIndexType(state);
 
 }
 

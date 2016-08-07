@@ -199,6 +199,8 @@ void ValidateWarehouseCount(const configuration &state);
 
 void ValidateTransactionCount(const configuration &state);
 
+void ValidateIndexType(const configuration &state);
+
 }  // namespace tpcc
 }  // namespace benchmark
 }  // namespace peloton

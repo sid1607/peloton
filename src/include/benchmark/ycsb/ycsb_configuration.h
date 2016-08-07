@@ -85,6 +85,8 @@ void ValidateDuration(const configuration &state);
 
 void ValidateTransactionCount(const configuration &state);
 
+void ValidateIndexType(const configuration &state);
+
 }  // namespace ycsb
 }  // namespace benchmark
 }  // namespace peloton

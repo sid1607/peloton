@@ -274,12 +274,14 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
   ycsb::state.update_ratio = 0.5;
   ycsb::state.backend_count = 2;
   ycsb::state.transaction_count = 0;
+  ycsb::state.index_type = INDEX_TYPE_HASH;
 
   // Default Values
   tpcc::state.warehouse_count = 2;  // 10
   tpcc::state.duration = 1000;
   tpcc::state.backend_count = 2;
   tpcc::state.transaction_count = 0;
+  tpcc::state.index_type = INDEX_TYPE_HASH;
 
   // Parse args
   while (1) {
@@ -389,7 +391,7 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
     ycsb::ValidateBackendCount(ycsb::state);
     ycsb::ValidateDuration(ycsb::state);
     ycsb::ValidateTransactionCount(ycsb::state);
-
+    ycsb::ValidateIndexType(ycsb::state);
   }
   // Print TPCC configuration
   else if (state.benchmark_type == BENCHMARK_TYPE_TPCC) {
@@ -397,6 +399,7 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
     tpcc::ValidateDuration(tpcc::state);
     tpcc::ValidateWarehouseCount(tpcc::state);
     tpcc::ValidateTransactionCount(tpcc::state);
+    tpcc::ValidateIndexType(tpcc::state);
 
     // Static TPCC parameters
     tpcc::state.item_count = 1000;            // 100000
