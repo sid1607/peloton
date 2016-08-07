@@ -29,6 +29,7 @@ void Usage(FILE *out) {
           "   -d --duration          :  execution duration \n"
           "   -k --warehouse_count   :  warehouse count \n"
           "   -t --transaction-count :  # of transactions \n"
+          "   -i --index             :  index type \n"
   );
 }
 
@@ -37,6 +38,7 @@ static struct option opts[] = {
     { "duration", optional_argument, NULL, 'd' },
     { "warehouse_count", optional_argument, NULL, 'k' },
     { "transaction_count", optional_argument, NULL, 't'},
+    { "index", optional_argument, NULL, 'i'},
     { NULL, 0, NULL, 0}
 };
 
@@ -76,17 +78,29 @@ void ValidateTransactionCount(const configuration &state) {
   LOG_INFO("%s : %d", "transaction_count", state.transaction_count);
 }
 
+void ValidateIndex(const configuration &state) {
+  if (state.index_type != INDEX_TYPE_BWTREE &&
+      state.index_type != INDEX_TYPE_HASH &&
+      state.index_type != INDEX_TYPE_SKIPLIST) {
+    LOG_ERROR("Invalid index type : %s", IndexTypeToString(state.index_type).c_str());
+    exit(EXIT_FAILURE);
+  }
+
+  LOG_INFO("%s : %s", "index type", IndexTypeToString(state.index_type).c_str());
+}
+
 void ParseArguments(int argc, char *argv[], configuration &state) {
   // Default Values
   state.duration = 1000;
   state.backend_count = 2;
   state.warehouse_count = 2;  // 10
   state.transaction_count = 0;
+  state.index_type = INDEX_TYPE_HASH;
 
   // Parse args
   while (1) {
     int idx = 0;
-    int c = getopt_long(argc, argv, "ah:b:d:k:t:", opts, &idx);
+    int c = getopt_long(argc, argv, "ah:b:d:k:t:i:", opts, &idx);
 
     if (c == -1) break;
 
@@ -102,6 +116,9 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
         break;
       case 't':
         state.transaction_count = atoi(optarg);
+        break;
+      case 'i':
+        state.index_type = (peloton::IndexType) atoi(optarg);
         break;
 
       case 'h':
@@ -127,6 +144,7 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   ValidateWarehouseCount(state);
   ValidateDuration(state);
   ValidateTransactionCount(state);
+  ValidateIndex(state);
 
 }
 

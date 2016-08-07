@@ -31,7 +31,7 @@ void Usage(FILE *out) {
           "   -k --scale-factor      :  # of tuples \n"
           "   -u --update-ratio      :  Fraction of updates \n"
           "   -t --transaction-count :  # of transactions \n"
-          "   -i --ints-mode         :  Store ints \n"
+          "   -i --index             :  index type \n"
           );
 }
 
@@ -42,7 +42,7 @@ static struct option opts[] = {
     { "scale-factor", optional_argument, NULL, 'k'},
     { "update-ratio", optional_argument, NULL, 'u'},
     { "transaction-count", optional_argument, NULL, 't'},
-    { "ints-mode", optional_argument, NULL, 'i'},
+    { "index", optional_argument, NULL, 'i'},
     { NULL, 0, NULL, 0}};
 
 void ValidateScaleFactor(const configuration &state) {
@@ -99,13 +99,15 @@ void ValidateTransactionCount(const configuration &state) {
   LOG_INFO("%s : %d", "transaction_count", state.transaction_count);
 }
 
-void ValidateIntsMode(const configuration &state) {
-  if (state.ints_mode < 0) {
-    LOG_ERROR("Invalid ints_mode :: %d", state.ints_mode);
+void ValidateIndex(const configuration &state) {
+  if (state.index_type != INDEX_TYPE_BWTREE &&
+      state.index_type != INDEX_TYPE_HASH &&
+      state.index_type != INDEX_TYPE_SKIPLIST) {
+    LOG_ERROR("Invalid index type : %s", IndexTypeToString(state.index_type).c_str());
     exit(EXIT_FAILURE);
   }
 
-  LOG_INFO("%s : %d", "ints_mode", state.ints_mode);
+  LOG_INFO("%s : %s", "index type", IndexTypeToString(state.index_type).c_str());
 }
 
 void ParseArguments(int argc, char *argv[], configuration &state) {
@@ -117,6 +119,7 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   state.backend_count = 2;
   state.transaction_count = 0;
   state.ints_mode = true;
+  state.index_type = INDEX_TYPE_HASH;
 
   // Parse args
   while (1) {
@@ -145,7 +148,7 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
         state.update_ratio = atof(optarg);
         break;
       case 'i':
-        state.ints_mode = atoi(optarg);
+        state.index_type = (peloton::IndexType) atoi(optarg);
         break;
 
       case 'h':
@@ -168,7 +171,7 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   ValidateUpdateRatio(state);
   ValidateDuration(state);
   ValidateTransactionCount(state);
-  ValidateIntsMode(state);
+  ValidateIndex(state);
 
 }
 

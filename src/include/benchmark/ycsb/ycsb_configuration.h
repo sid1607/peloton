@@ -61,6 +61,10 @@ class configuration {
 
   // store ints
   bool ints_mode;
+
+  // index type
+  IndexType index_type;
+
 };
 
 extern configuration state;

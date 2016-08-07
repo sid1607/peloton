@@ -360,11 +360,11 @@ public:
      * @throw std::invalid_argument if the given minimum load factor is invalid,
      * or if the initial space exceeds the maximum hashpower
      */
-    cuckoohash_map(size_t n = DEFAULT_SIZE,
+    cuckoohash_map(const hasher& hf = hasher(),
+                   const key_equal eql = key_equal(),
+                   size_t n = DEFAULT_SIZE,
                    double mlf = DEFAULT_MINIMUM_LOAD_FACTOR,
-                   size_t mhp = NO_MAXIMUM_HASHPOWER,
-                   const hasher& hf = hasher(),
-                   const key_equal eql = key_equal())
+                   size_t mhp = NO_MAXIMUM_HASHPOWER)
         : hash_fn(hf), eq_fn(eql) {
         minimum_load_factor(mlf);
         maximum_hashpower(mhp);

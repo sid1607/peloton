@@ -179,6 +179,10 @@ class configuration {
 
   // # of transaction
   int transaction_count;
+
+  // index type
+  IndexType index_type;
+
 };
 
 extern configuration state;

@@ -21,6 +21,7 @@
 #include "index/btree_index.h"
 #include "index/bwtree_index.h"
 #include "index/skip_list_index.h"
+#include "index/hash_index.h"
 
 namespace peloton {
 namespace index {
@@ -43,6 +44,10 @@ Index *IndexFactory::GetInstance(IndexMetadata *metadata) {
   // TODO: Disable ints only for now
   ints_only = false;
   LOG_TRACE("Ints Only : %d", ints_only);
+
+  //===--------------------------------------------------------------------===//
+  // BTREE
+  //===--------------------------------------------------------------------===//
 
   if (index_type == INDEX_TYPE_BTREE) {
 
@@ -107,6 +112,10 @@ Index *IndexFactory::GetInstance(IndexMetadata *metadata) {
     }
   }
 
+  //===--------------------------------------------------------------------===//
+  // SKIPLIST
+  //===--------------------------------------------------------------------===//
+
   if (index_type == INDEX_TYPE_SKIPLIST) {
 
     if (ints_only && (index_type == INDEX_TYPE_SKIPLIST)) {
@@ -169,6 +178,10 @@ Index *IndexFactory::GetInstance(IndexMetadata *metadata) {
           TupleKeyEqualityChecker>(metadata);
     }
   }
+
+  //===--------------------------------------------------------------------===//
+  // BWTREE
+  //===--------------------------------------------------------------------===//
 
   if (index_type == INDEX_TYPE_BWTREE) {
 
@@ -264,6 +277,85 @@ Index *IndexFactory::GetInstance(IndexMetadata *metadata) {
     }
   }
 
+
+  //===--------------------------------------------------------------------===//
+  // HASH
+  //===--------------------------------------------------------------------===//
+
+  if (index_type == INDEX_TYPE_HASH) {
+
+    if (ints_only && (index_type == INDEX_TYPE_HASH)) {
+      if (key_size <= sizeof(uint64_t)) {
+        return new HashIndex<IntsKey<1>,
+            ItemPointer,
+            IntsHasher<1>,
+            IntsComparator<1>,
+            IntsEqualityChecker<1>>(metadata);
+      } else if (key_size <= sizeof(int64_t) * 2) {
+        return new HashIndex<IntsKey<2>,
+            ItemPointer,
+            IntsHasher<2>,
+            IntsComparator<2>,
+            IntsEqualityChecker<2>>(metadata);
+      } else if (key_size <= sizeof(int64_t) * 3) {
+        return new HashIndex<IntsKey<3>,
+            ItemPointer,
+            IntsHasher<3>,
+            IntsComparator<3>,
+            IntsEqualityChecker<3>>(metadata);
+      } else if (key_size <= sizeof(int64_t) * 4) {
+        return new HashIndex<IntsKey<4>,
+            ItemPointer,
+            IntsHasher<4>,
+            IntsComparator<4>,
+            IntsEqualityChecker<4>>(metadata);
+      } else {
+        throw IndexException(
+            "We currently only support tree index on non-unique "
+            "integer keys of size 32 bytes or smaller...");
+      }
+    }
+
+    if (key_size <= 4) {
+      return new HashIndex<GenericKey<4>,
+          ItemPointer,
+          GenericHasher<4>,
+          GenericComparator<4>,
+          GenericEqualityChecker<4>>(metadata);
+
+    } else if (key_size <= 8) {
+      return new HashIndex<GenericKey<8>,
+          ItemPointer,
+          GenericHasher<8>,
+          GenericComparator<8>,
+          GenericEqualityChecker<8>>(metadata);
+    } else if (key_size <= 16) {
+      return new HashIndex<GenericKey<16>,
+          ItemPointer,
+          GenericHasher<16>,
+          GenericComparator<16>,
+          GenericEqualityChecker<16>>(metadata);
+    } else if (key_size <= 64) {
+      return new HashIndex<GenericKey<64>,
+          ItemPointer,
+          GenericHasher<64>,
+          GenericComparator<64>,
+          GenericEqualityChecker<64>>(metadata);
+    } else if (key_size <= 256) {
+      return new HashIndex<GenericKey<256>,
+          ItemPointer,
+          GenericHasher<256>,
+          GenericComparator<256>,
+          GenericEqualityChecker<256>>(metadata);
+    } else {
+      return new HashIndex<TupleKey,
+          ItemPointer,
+          TupleKeyHasher,
+          TupleKeyComparator,
+          TupleKeyEqualityChecker>(metadata);
+    }
+
+  }
 
   throw IndexException("Unsupported index scheme.");
   return NULL;

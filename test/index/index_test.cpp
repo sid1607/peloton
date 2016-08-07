@@ -37,7 +37,7 @@ ItemPointer item2(123, 19);
 
 // Since we need index type to determine the result
 // of the test, this needs to be made as a global static
-static IndexType index_type = INDEX_TYPE_BWTREE;
+static IndexType index_type = INDEX_TYPE_HASH;
 
 // Uncomment this to enable BwTree as index being tested
 //static IndexType index_type = INDEX_TYPE_BWTREE;
@@ -137,26 +137,26 @@ void InsertTest(index::Index *index, VarlenPool *pool, size_t scale_factor,
     key3->SetValue(1, ValueFactory::GetStringValue("d"), pool);
     key4->SetValue(0, ValueFactory::GetIntegerValue(500 * scale_itr), pool);
     key4->SetValue(1, ValueFactory::GetStringValue(
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
                    pool);
     keynonce->SetValue(0, ValueFactory::GetIntegerValue(1000 * scale_itr),
                        pool);
@@ -208,26 +208,26 @@ void DeleteTest(index::Index *index, VarlenPool *pool, size_t scale_factor,
     key3->SetValue(1, ValueFactory::GetStringValue("d"), pool);
     key4->SetValue(0, ValueFactory::GetIntegerValue(500 * scale_itr), pool);
     key4->SetValue(1, ValueFactory::GetStringValue(
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
                    pool);
 
     // DELETE
@@ -268,7 +268,7 @@ TEST_F(IndexTests, MultiMapInsertTest) {
 
   // Checks
   index->ScanAllKeys(locations);
-  
+
   if(index_type == INDEX_TYPE_BWTREE) {
     EXPECT_EQ(locations.size(), 7);
   } else {
@@ -393,13 +393,13 @@ TEST_F(IndexTests, MultiThreadedInsertTest) {
   LaunchParallelTest(num_threads, InsertTest, index.get(), pool, scale_factor);
 
   index->ScanAllKeys(locations);
-  
+
   if(index_type == INDEX_TYPE_BWTREE) {
     EXPECT_EQ(locations.size(), 7);
   } else {
     EXPECT_EQ(locations.size(), 9 * num_threads);
   }
-  
+
   locations.clear();
 
   std::unique_ptr<storage::Tuple> key0(new storage::Tuple(key_schema, true));
@@ -417,13 +417,13 @@ TEST_F(IndexTests, MultiThreadedInsertTest) {
   locations.clear();
 
   index->ScanKey(key0.get(), locations);
-  
+
   if(index_type == INDEX_TYPE_BWTREE) {
     EXPECT_EQ(locations.size(), 1);
   } else {
     EXPECT_EQ(locations.size(), num_threads);
   }
-  
+
   EXPECT_EQ(locations[0].block, item0.block);
   locations.clear();
 
@@ -547,26 +547,26 @@ TEST_F(IndexTests, NonUniqueKeyMultiThreadedTest) {
   key2->SetValue(1, ValueFactory::GetStringValue("c"), pool);
   key4->SetValue(0, ValueFactory::GetIntegerValue(500), pool);
   key4->SetValue(1, ValueFactory::GetStringValue(
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
                  pool);
 
   index->ScanKey(key0.get(), locations);
@@ -580,206 +580,236 @@ TEST_F(IndexTests, NonUniqueKeyMultiThreadedTest) {
   } else {
     EXPECT_EQ(locations.size(), 2 * num_threads);
   }
-  
+
   locations.clear();
 
   index->ScanKey(key2.get(), locations);
-  
+
   if(index_type == INDEX_TYPE_BWTREE) {
     EXPECT_EQ(locations.size(), 1);
   } else {
     EXPECT_EQ(locations.size(), 1 * num_threads);
   }
-  
+
   EXPECT_EQ(locations[0].block, item1.block);
   locations.clear();
 
   index->ScanAllKeys(locations);
-  
+
   if(index_type == INDEX_TYPE_BWTREE) {
     EXPECT_EQ(locations.size(), 3);
   } else {
     EXPECT_EQ(locations.size(), 3 * num_threads);
   }
-  
+
   locations.clear();
 
   // FORWARD SCAN
-  index->Scan({key1->GetValue(0)}, {0}, {EXPRESSION_TYPE_COMPARE_EQUAL},
-              SCAN_DIRECTION_TYPE_FORWARD, locations);
-              
-  if(index_type == INDEX_TYPE_BWTREE) {
-    EXPECT_EQ(locations.size(), 3);
-  } else {
-    EXPECT_EQ(locations.size(), 3 * num_threads);
+  if (index->GetIndexMethodType() != INDEX_TYPE_HASH) {
+    index->Scan({key1->GetValue(0)}, {0}, {EXPRESSION_TYPE_COMPARE_EQUAL},
+                SCAN_DIRECTION_TYPE_FORWARD, locations);
+
+    if(index_type == INDEX_TYPE_BWTREE) {
+      EXPECT_EQ(locations.size(), 3);
+    } else {
+      EXPECT_EQ(locations.size(), 3 * num_threads);
+    }
   }
-  
+
+
   locations.clear();
 
   index->Scan({key1->GetValue(0), key1->GetValue(1)}, {0, 1},
               {EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_EQUAL},
               SCAN_DIRECTION_TYPE_FORWARD, locations);
-              
+
   if(index_type == INDEX_TYPE_BWTREE) {
     EXPECT_EQ(locations.size(), 2);
   } else {
     EXPECT_EQ(locations.size(), 2 * num_threads);
   }
-  
+
   locations.clear();
 
-  index->Scan(
-      {key1->GetValue(0), key1->GetValue(1)}, {0, 1},
-      {EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_GREATERTHAN},
-      SCAN_DIRECTION_TYPE_FORWARD, locations);
-      
-  if(index_type == INDEX_TYPE_BWTREE) {
-    EXPECT_EQ(locations.size(), 1);
-  } else {
-    EXPECT_EQ(locations.size(), 1 * num_threads);
+  if (index->GetIndexMethodType() != INDEX_TYPE_HASH) {
+    index->Scan(
+        {key1->GetValue(0), key1->GetValue(1)}, {0, 1},
+        {EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_GREATERTHAN},
+        SCAN_DIRECTION_TYPE_FORWARD, locations);
+
+    if(index_type == INDEX_TYPE_BWTREE) {
+      EXPECT_EQ(locations.size(), 1);
+    } else {
+      EXPECT_EQ(locations.size(), 1 * num_threads);
+    }
   }
-  
+
   locations.clear();
 
-  index->Scan(
-      {key1->GetValue(0), key1->GetValue(1)}, {0, 1},
-      {EXPRESSION_TYPE_COMPARE_GREATERTHAN, EXPRESSION_TYPE_COMPARE_EQUAL},
-      SCAN_DIRECTION_TYPE_FORWARD, locations);
-  EXPECT_EQ(locations.size(), 0);
-  locations.clear();
-
-  index->Scan({key2->GetValue(0), key2->GetValue(1)}, {0, 1},
-              {EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_LESSTHAN},
-              SCAN_DIRECTION_TYPE_FORWARD, locations);
-              
-  if(index_type == INDEX_TYPE_BWTREE) {
-    EXPECT_EQ(locations.size(), 2);
-  } else {
-    EXPECT_EQ(locations.size(), 2 * num_threads);
+  if (index->GetIndexMethodType() != INDEX_TYPE_HASH) {
+    index->Scan(
+        {key1->GetValue(0), key1->GetValue(1)}, {0, 1},
+        {EXPRESSION_TYPE_COMPARE_GREATERTHAN, EXPRESSION_TYPE_COMPARE_EQUAL},
+        SCAN_DIRECTION_TYPE_FORWARD, locations);
+    EXPECT_EQ(locations.size(), 0);
   }
-  
+
   locations.clear();
 
-  index->Scan(
-      {key0->GetValue(0), key0->GetValue(1), key2->GetValue(0),
-       key2->GetValue(1)},
+  if (index->GetIndexMethodType() != INDEX_TYPE_HASH) {
+    index->Scan({key2->GetValue(0), key2->GetValue(1)}, {0, 1},
+                {EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_LESSTHAN},
+                SCAN_DIRECTION_TYPE_FORWARD, locations);
+
+    if(index_type == INDEX_TYPE_BWTREE) {
+      EXPECT_EQ(locations.size(), 2);
+    } else {
+      EXPECT_EQ(locations.size(), 2 * num_threads);
+    }
+  }
+
+  locations.clear();
+
+  if (index->GetIndexMethodType() != INDEX_TYPE_HASH) {
+    index->Scan(
+        {key0->GetValue(0), key0->GetValue(1), key2->GetValue(0),
+      key2->GetValue(1)},
       {0, 1, 0, 1},
       {EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_GREATERTHAN,
-       EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_LESSTHAN},
-      SCAN_DIRECTION_TYPE_FORWARD, locations);
-      
-  if(index_type == INDEX_TYPE_BWTREE) {
-    EXPECT_EQ(locations.size(), 2);
-  } else {
-    EXPECT_EQ(locations.size(), 2 * num_threads);
+          EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_LESSTHAN},
+          SCAN_DIRECTION_TYPE_FORWARD, locations);
+
+    if(index_type == INDEX_TYPE_BWTREE) {
+      EXPECT_EQ(locations.size(), 2);
+    } else {
+      EXPECT_EQ(locations.size(), 2 * num_threads);
+    }
   }
-  
+
   locations.clear();
 
-  index->Scan({key0->GetValue(0), key0->GetValue(1), key4->GetValue(0),
-               key4->GetValue(1)},
-              {0, 1, 0, 1}, {EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO,
-                             EXPRESSION_TYPE_COMPARE_GREATERTHAN,
-                             EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO,
-                             EXPRESSION_TYPE_COMPARE_LESSTHAN},
-              SCAN_DIRECTION_TYPE_FORWARD, locations);
-              
-  if(index_type == INDEX_TYPE_BWTREE) {
-    EXPECT_EQ(locations.size(), 3);
-  } else {
-    EXPECT_EQ(locations.size(), 3 * num_threads);
+  if (index->GetIndexMethodType() != INDEX_TYPE_HASH) {
+
+    index->Scan({key0->GetValue(0), key0->GetValue(1), key4->GetValue(0),
+      key4->GetValue(1)},
+                {0, 1, 0, 1}, {EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO,
+                    EXPRESSION_TYPE_COMPARE_GREATERTHAN,
+                    EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO,
+                    EXPRESSION_TYPE_COMPARE_LESSTHAN},
+                    SCAN_DIRECTION_TYPE_FORWARD, locations);
+
+    if(index_type == INDEX_TYPE_BWTREE) {
+      EXPECT_EQ(locations.size(), 3);
+    } else {
+      EXPECT_EQ(locations.size(), 3 * num_threads);
+    }
+
   }
-  
+
   locations.clear();
 
   // REVERSE SCAN
-  index->Scan({key1->GetValue(0)}, {0}, {EXPRESSION_TYPE_COMPARE_EQUAL},
-              SCAN_DIRECTION_TYPE_BACKWARD, locations);
-              
-  if(index_type == INDEX_TYPE_BWTREE) {
-    EXPECT_EQ(locations.size(), 3);
-  } else {
-    EXPECT_EQ(locations.size(), 3 * num_threads);
+  if (index->GetIndexMethodType() != INDEX_TYPE_HASH) {
+    index->Scan({key1->GetValue(0)}, {0}, {EXPRESSION_TYPE_COMPARE_EQUAL},
+                SCAN_DIRECTION_TYPE_BACKWARD, locations);
+
+    if(index_type == INDEX_TYPE_BWTREE) {
+      EXPECT_EQ(locations.size(), 3);
+    } else {
+      EXPECT_EQ(locations.size(), 3 * num_threads);
+    }
   }
-  
+
   locations.clear();
 
   index->Scan({key1->GetValue(0), key1->GetValue(1)}, {0, 1},
               {EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_EQUAL},
               SCAN_DIRECTION_TYPE_BACKWARD, locations);
-              
+
   if(index_type == INDEX_TYPE_BWTREE) {
     EXPECT_EQ(locations.size(), 2);
   } else {
     EXPECT_EQ(locations.size(), 2 * num_threads);
   }
-  
+
   locations.clear();
 
-  index->Scan(
-      {key1->GetValue(0), key1->GetValue(1)}, {0, 1},
-      {EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_GREATERTHAN},
-      SCAN_DIRECTION_TYPE_BACKWARD, locations);
-      
-  if(index_type == INDEX_TYPE_BWTREE) {
-    EXPECT_EQ(locations.size(), 1);
-  } else {
-    EXPECT_EQ(locations.size(), 1 * num_threads);
+  if (index->GetIndexMethodType() != INDEX_TYPE_HASH) {
+    index->Scan(
+        {key1->GetValue(0), key1->GetValue(1)}, {0, 1},
+        {EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_GREATERTHAN},
+        SCAN_DIRECTION_TYPE_BACKWARD, locations);
+
+    if(index_type == INDEX_TYPE_BWTREE) {
+      EXPECT_EQ(locations.size(), 1);
+    } else {
+      EXPECT_EQ(locations.size(), 1 * num_threads);
+    }
+
   }
-  
+
   locations.clear();
 
-  index->Scan(
-      {key1->GetValue(0), key1->GetValue(1)}, {0, 1},
-      {EXPRESSION_TYPE_COMPARE_GREATERTHAN, EXPRESSION_TYPE_COMPARE_EQUAL},
-      SCAN_DIRECTION_TYPE_BACKWARD, locations);
-      
-  EXPECT_EQ(locations.size(), 0);
-  
-  locations.clear();
+  if (index->GetIndexMethodType() != INDEX_TYPE_HASH) {
+    index->Scan(
+        {key1->GetValue(0), key1->GetValue(1)}, {0, 1},
+        {EXPRESSION_TYPE_COMPARE_GREATERTHAN, EXPRESSION_TYPE_COMPARE_EQUAL},
+        SCAN_DIRECTION_TYPE_BACKWARD, locations);
 
-  index->Scan({key2->GetValue(0), key2->GetValue(1)}, {0, 1},
-              {EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_LESSTHAN},
-              SCAN_DIRECTION_TYPE_BACKWARD, locations);
-              
-  if(index_type == INDEX_TYPE_BWTREE) {
-    EXPECT_EQ(locations.size(), 2);
-  } else {
-    EXPECT_EQ(locations.size(), 2 * num_threads);
+    EXPECT_EQ(locations.size(), 0);
   }
-  
+
   locations.clear();
 
-  index->Scan(
-      {key0->GetValue(0), key0->GetValue(1), key2->GetValue(0),
-       key2->GetValue(1)},
+  if (index->GetIndexMethodType() != INDEX_TYPE_HASH) {
+    index->Scan({key2->GetValue(0), key2->GetValue(1)}, {0, 1},
+                {EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_LESSTHAN},
+                SCAN_DIRECTION_TYPE_BACKWARD, locations);
+
+
+    if(index_type == INDEX_TYPE_BWTREE) {
+      EXPECT_EQ(locations.size(), 2);
+    } else {
+      EXPECT_EQ(locations.size(), 2 * num_threads);
+    }
+  }
+
+  locations.clear();
+
+  if (index->GetIndexMethodType() != INDEX_TYPE_HASH) {
+    index->Scan(
+        {key0->GetValue(0), key0->GetValue(1), key2->GetValue(0),
+      key2->GetValue(1)},
       {0, 1, 0, 1},
       {EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_GREATERTHAN,
-       EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_LESSTHAN},
-      SCAN_DIRECTION_TYPE_BACKWARD, locations);
-      
-  if(index_type == INDEX_TYPE_BWTREE) {
-    EXPECT_EQ(locations.size(), 2);
-  } else {
-    EXPECT_EQ(locations.size(), 2 * num_threads);
+          EXPRESSION_TYPE_COMPARE_EQUAL, EXPRESSION_TYPE_COMPARE_LESSTHAN},
+          SCAN_DIRECTION_TYPE_BACKWARD, locations);
+
+    if(index_type == INDEX_TYPE_BWTREE) {
+      EXPECT_EQ(locations.size(), 2);
+    } else {
+      EXPECT_EQ(locations.size(), 2 * num_threads);
+    }
   }
-  
+
   locations.clear();
 
-  index->Scan({key0->GetValue(0), key0->GetValue(1), key4->GetValue(0),
-               key4->GetValue(1)},
-              {0, 1, 0, 1}, {EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO,
-                             EXPRESSION_TYPE_COMPARE_GREATERTHAN,
-                             EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO,
-                             EXPRESSION_TYPE_COMPARE_LESSTHAN},
-              SCAN_DIRECTION_TYPE_BACKWARD, locations);
-              
-  if(index_type == INDEX_TYPE_BWTREE) {
-    EXPECT_EQ(locations.size(), 3);
-  } else {
-    EXPECT_EQ(locations.size(), 3 * num_threads);
+  if (index->GetIndexMethodType() != INDEX_TYPE_HASH) {
+    index->Scan({key0->GetValue(0), key0->GetValue(1), key4->GetValue(0),
+      key4->GetValue(1)},
+                {0, 1, 0, 1}, {EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO,
+                    EXPRESSION_TYPE_COMPARE_GREATERTHAN,
+                    EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO,
+                    EXPRESSION_TYPE_COMPARE_LESSTHAN},
+                    SCAN_DIRECTION_TYPE_BACKWARD, locations);
+
+    if(index_type == INDEX_TYPE_BWTREE) {
+      EXPECT_EQ(locations.size(), 3);
+    } else {
+      EXPECT_EQ(locations.size(), 3 * num_threads);
+    }
   }
-  
+
   locations.clear();
 
   delete tuple_schema;
@@ -795,7 +825,7 @@ TEST_F(IndexTests, NonUniqueKeyMultiThreadedStressTest) {
   // Parallel Test
   size_t num_threads = 4;
   size_t scale_factor = 3;
-  
+
   LaunchParallelTest(num_threads, InsertTest, index.get(), pool, scale_factor);
   LaunchParallelTest(num_threads, DeleteTest, index.get(), pool, scale_factor);
 
@@ -816,34 +846,34 @@ TEST_F(IndexTests, NonUniqueKeyMultiThreadedStressTest) {
   locations.clear();
 
   index->ScanKey(key1.get(), locations);
-  
+
   if(index_type == INDEX_TYPE_BWTREE) {
     EXPECT_EQ(locations.size(), 2);
   } else {
     EXPECT_EQ(locations.size(), 2 * num_threads);
   }
-  
+
   locations.clear();
 
   index->ScanKey(key2.get(), locations);
-  
+
   if(index_type == INDEX_TYPE_BWTREE) {
     EXPECT_EQ(locations.size(), 1);
   } else {
     EXPECT_EQ(locations.size(), 1 * num_threads);
   }
-  
+
   EXPECT_EQ(locations[0].block, item1.block);
   locations.clear();
 
   index->ScanAllKeys(locations);
-  
+
   if(index_type == INDEX_TYPE_BWTREE) {
     EXPECT_EQ(locations.size(), 3 * scale_factor);
   } else {
     EXPECT_EQ(locations.size(), 3 * num_threads * scale_factor);
   }
-  
+
   locations.clear();
 
   delete tuple_schema;
@@ -877,7 +907,7 @@ TEST_F(IndexTests, NonUniqueKeyMultiThreadedStressTest2) {
       EXPECT_EQ(locations.size(), 3 * scale_factor * num_threads);
     }
   }
-    
+
   locations.clear();
 
 
@@ -911,7 +941,7 @@ TEST_F(IndexTests, NonUniqueKeyMultiThreadedStressTest2) {
       EXPECT_EQ(locations.size(), 1 * num_threads);
     }
   }
-  
+
   locations.clear();
 
   delete tuple_schema;
