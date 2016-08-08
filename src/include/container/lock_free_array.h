@@ -46,9 +46,6 @@ class LockFreeArray {
   // Get a item
   ValueType Find(const std::size_t &offset) const;
 
-  // Get a valid item
-  ValueType FindValid(const std::size_t &offset, const ValueType& invalid_value) const;
-
   // Delete key from the lock_free_array
   bool Erase(const std::size_t &offset, const ValueType& invalid_value);
 

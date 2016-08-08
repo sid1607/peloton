@@ -30,13 +30,13 @@ void Usage() {
       "   -s --selectivity       :  Selectivity\n"
       "   -p --projectivity      :  Projectivity\n"
       "   -l --layout            :  Layout\n"
-      "   -t --transactions      :  # of transactions\n"
       "   -e --experiment_type   :  Experiment Type\n"
       "   -c --column_count      :  # of columns\n"
       "   -w --write_ratio       :  Fraction of writes\n"
       "   -g --tuples_per_tg     :  # of tuples per tilegroup\n"
       "   -y --hybrid_scan_type  :  hybrid scan type\n"
-      "   -i --index_count       :  # of indexes\n"
+      "   -t --phase-length      :  Length of a phase\n"
+      "   -q --total-ops         :  Total # of ops\n"
   );
   exit(EXIT_FAILURE);
 }
@@ -47,13 +47,13 @@ static struct option opts[] = {
     {"selectivity", optional_argument, NULL, 's'},
     {"projectivity", optional_argument, NULL, 'p'},
     {"layout", optional_argument, NULL, 'l'},
-    {"transactions", optional_argument, NULL, 't'},
     {"experiment-type", optional_argument, NULL, 'e'},
     {"column_count", optional_argument, NULL, 'c'},
     {"write_ratio", optional_argument, NULL, 'w'},
     {"tuples_per_tg", optional_argument, NULL, 'g'},
     {"hybrid_scan_type", optional_argument, NULL, 'y'},
-    {"index_count", optional_argument, NULL, 'i'},
+    {"phase-length", optional_argument, NULL, 't'},
+    {"total-ops", optional_argument, NULL, 'q'},
     {NULL, 0, NULL, 0}
 };
 
@@ -173,15 +173,6 @@ static void ValidateColumnCount(const configuration &state) {
   LOG_INFO("%s : %d", "column_count", state.column_count);
 }
 
-static void ValidateIndexCount(const configuration &state) {
-  if (state.index_count <= 0) {
-    LOG_ERROR("Invalid index_count :: %d", state.index_count);
-    exit(EXIT_FAILURE);
-  }
-
-  LOG_INFO("%s : %d", "index_count", state.index_count);
-}
-
 static void ValidateWriteRatio(const configuration &state) {
   if (state.write_ratio < 0 || state.write_ratio > 1) {
     LOG_ERROR("Invalid write_ratio :: %.1lf", state.write_ratio);
@@ -210,9 +201,11 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   state.scale_factor = 100.0;
   state.tuples_per_tilegroup = DEFAULT_TUPLES_PER_TILEGROUP;
 
-  state.transactions = 1;
   state.selectivity = 1.0;
   state.projectivity = 1.0;
+
+  state.phase_length = 1;
+  state.total_ops = 1;
 
   state.layout_mode = LAYOUT_TYPE_ROW;
 
@@ -221,14 +214,13 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   state.column_count = 500;
   state.write_ratio = 0.0;
 
-  state.index_count = 1;
-
-  state.adapt = false;
+  state.adapt_layout = false;
+  state.adapt_indexes = true;
 
   // Parse args
   while (1) {
     int idx = 0;
-    int c = getopt_long(argc, argv, "aho:k:s:p:l:t:e:c:w:g:y:i:", opts, &idx);
+    int c = getopt_long(argc, argv, "aho:k:s:p:l:t:e:c:w:g:y:i:q:", opts, &idx);
 
     if (c == -1) break;
 
@@ -248,9 +240,6 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
       case 'l':
         state.layout_mode = (LayoutType)atoi(optarg);
         break;
-      case 't':
-        state.transactions = atoi(optarg);
-        break;
       case 'e':
         state.experiment_type = (ExperimentType)atoi(optarg);
         break;
@@ -266,8 +255,11 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
       case 'y':
         state.hybrid_scan_type = (HybridScanType)atoi(optarg);
         break;
-      case 'i':
-        state.index_count = atoi(optarg);
+      case 't':
+        state.phase_length = atol(optarg);
+        break;
+      case 'q':
+        state.total_ops = atol(optarg);
         break;
 
       case 'h':
@@ -289,11 +281,10 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
     ValidateProjectivity(state);
     ValidateScaleFactor(state);
     ValidateColumnCount(state);
-    ValidateIndexCount(state);
     ValidateWriteRatio(state);
     ValidateTuplesPerTileGroup(state);
 
-    LOG_INFO("%s : %lu", "transactions", state.transactions);
+    LOG_INFO("%s : %lu", "total_ops", state.total_ops);
   } else {
     ValidateExperiment(state);
   }

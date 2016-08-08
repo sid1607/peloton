@@ -685,7 +685,7 @@ const std::string DataTable::GetInfo() const {
 size_t DataTable::GetIndexCount() const {
   size_t index_count_ = 0;
 
-  index_count_ = indexes_.GetSize();
+  index_count_ = indexes_columns_.size();
 
   return index_count_;
 }
@@ -744,6 +744,14 @@ void DataTable::DropIndexWithOid(const oid_t &index_oid) {
 
   // Drop index column info
   indexes_columns_.erase(indexes_columns_.begin() + index_offset);
+}
+
+void DataTable::DropIndexes() {
+
+  indexes_.Clear(nullptr);
+
+  indexes_columns_.clear();
+
 }
 
 std::shared_ptr<index::Index> DataTable::GetIndex(const oid_t &index_offset) {

@@ -182,7 +182,7 @@ double IndexTuner::ComputeWorkloadWriteRatio(const std::vector<brain::Sample>& s
   // Compute write ratio
   auto total_duration = total_read_duration + total_write_duration;
   PL_ASSERT(total_duration > 0);
-  write_ratio = total_read_duration / (total_duration);
+  write_ratio = total_write_duration / (total_duration);
 
   // Compute exponential moving average
   if(average_write_ratio == INVALID_RATIO) {

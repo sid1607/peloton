@@ -135,8 +135,8 @@ expression::AbstractExpression *CreateScanPredicate(std::vector<oid_t> key_attrs
   const int tuple_start_offset = GetLowerBound();
   const int tuple_end_offset = GetUpperBound();
 
-  LOG_TRACE("Lower bound : %d", tuple_start_offset);
-  LOG_TRACE("Upper bound : %d", tuple_end_offset);
+  LOG_INFO("Lower bound : %d", tuple_start_offset);
+  LOG_INFO("Upper bound : %d", tuple_end_offset);
 
   expression::AbstractExpression *predicate = nullptr;
 
@@ -204,20 +204,18 @@ static void WriteOutput(double duration) {
   // Convert to ms
   duration *= 1000;
 
-  if(rand() % 20 == 0) {
-    LOG_INFO("----------------------------------------------------------");
-    LOG_INFO("%d %d %.3lf %.3lf %u %.1lf %d %d %d :: %.1lf ms",
-             state.layout_mode,
-             state.operator_type,
-             state.selectivity,
-             state.projectivity,
-             query_itr,
-             state.write_ratio,
-             state.scale_factor,
-             state.column_count,
-             state.tuples_per_tilegroup,
-             duration);
-  }
+  LOG_INFO("----------------------------------------------------------");
+  LOG_INFO("%d %d %.3lf %.3lf %u %.1lf %d %d %d :: %.1lf ms",
+           state.layout_mode,
+           state.operator_type,
+           state.selectivity,
+           state.projectivity,
+           query_itr,
+           state.write_ratio,
+           state.scale_factor,
+           state.column_count,
+           state.tuples_per_tilegroup,
+           duration);
 
   out << state.layout_mode << " ";
   out << state.operator_type << " ";
@@ -239,7 +237,7 @@ static void ExecuteTest(std::vector<executor::AbstractExecutor *> &executors,
                         double selectivity) {
   Timer<> timer;
 
-  auto txn_count = state.transactions;
+  auto txn_count = state.phase_length;
   bool status = false;
 
   // Run these many transactions
@@ -351,26 +349,37 @@ std::shared_ptr<index::Index> PickIndex(storage::DataTable* table,
   return index;
 }
 
-void RunDirectTest() {
-  const bool is_inlined = true;
-  auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
+void RunSimpleQuery() {
 
-  auto txn = txn_manager.BeginTransaction();
+  std::vector<oid_t> tuple_key_attrs;
+  std::vector<oid_t> index_key_attrs;
 
-  /////////////////////////////////////////////////////////
-  // SEQ SCAN + PREDICATE
-  /////////////////////////////////////////////////////////
-
-  std::unique_ptr<executor::ExecutorContext> context(
-      new executor::ExecutorContext(txn));
-
-  // Column ids to be added to logical tile after scan.
-  std::vector<oid_t> column_ids;
-  oid_t column_count = state.projectivity * state.column_count;
-
-  for (oid_t col_itr = 0; col_itr < column_count; col_itr++) {
-    column_ids.push_back(sdbench_column_ids[col_itr]);
+  auto rand_sample = rand() % 10;
+  if(rand_sample <= 3) {
+    tuple_key_attrs = {4};
+    index_key_attrs = {0};
   }
+  else if(rand_sample <= 6){
+    tuple_key_attrs = {3};
+    index_key_attrs = {0};
+  }
+  else {
+    tuple_key_attrs = {2};
+    index_key_attrs = {0};
+  }
+
+  UNUSED_ATTRIBUTE std::stringstream os;
+  os << "Direct :: ";
+  for(auto tuple_key_attr : tuple_key_attrs){
+    os << tuple_key_attr << " ";
+  }
+  LOG_INFO("%s", os.str().c_str());
+
+  RunQuery(tuple_key_attrs, index_key_attrs);
+
+}
+
+void RunModerateQuery() {
 
   std::vector<oid_t> tuple_key_attrs;
   std::vector<oid_t> index_key_attrs;
@@ -384,21 +393,38 @@ void RunDirectTest() {
     tuple_key_attrs = {3, 6};
     index_key_attrs = {0, 1};
   }
-  else if(rand_sample <= 8){
-    tuple_key_attrs = {0, 1};
-    index_key_attrs = {0, 1};
-  }
   else {
     tuple_key_attrs = {2};
     index_key_attrs = {0};
   }
 
-  UNUSED_ATTRIBUTE std::stringstream os;
-  os << "Direct :: ";
-  for(auto tuple_key_attr : tuple_key_attrs){
-    os << tuple_key_attr << " ";
+  RunQuery(tuple_key_attrs, index_key_attrs);
+}
+
+
+void RunQuery(const std::vector<oid_t>& tuple_key_attrs,
+              const std::vector<oid_t>& index_key_attrs) {
+  const bool is_inlined = true;
+  auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
+
+  auto txn = txn_manager.BeginTransaction();
+
+  /////////////////////////////////////////////////////////
+  // SEQ SCAN + PREDICATE
+  /////////////////////////////////////////////////////////
+
+  std::unique_ptr<executor::ExecutorContext> context(
+      new executor::ExecutorContext(txn));
+
+  // Column ids to be added to logical tile after scan.
+  // We need all columns because projection can require any column
+  std::vector<oid_t> column_ids;
+  oid_t column_count = state.column_count;
+
+  column_ids.push_back(0);
+  for (oid_t col_itr = 0; col_itr < column_count; col_itr++) {
+    column_ids.push_back(sdbench_column_ids[col_itr]);
   }
-  LOG_INFO("%s", os.str().c_str());
 
   // Create and set up seq scan executor
   auto predicate = CreateScanPredicate(tuple_key_attrs);
@@ -439,13 +465,72 @@ void RunDirectTest() {
                                                     context.get());
 
   /////////////////////////////////////////////////////////
+  // AGGREGATION
+  /////////////////////////////////////////////////////////
+
+  // Resize column ids to contain only columns
+  // over which we compute aggregates
+  column_count = state.projectivity * state.column_count;
+  column_ids.resize(column_count);
+
+  // (1-5) Setup plan node
+
+  // 1) Set up group-by columns
+  std::vector<oid_t> group_by_columns;
+
+  // 2) Set up project info
+  DirectMapList direct_map_list;
+  oid_t col_itr = 0;
+  oid_t tuple_idx = 1;  // tuple2
+  for (col_itr = 0; col_itr < column_count; col_itr++) {
+    direct_map_list.push_back({col_itr, {tuple_idx, col_itr}});
+    col_itr++;
+  }
+
+  std::unique_ptr<const planner::ProjectInfo> proj_info(
+      new planner::ProjectInfo(TargetList(),
+                               std::move(direct_map_list)));
+
+  // 3) Set up aggregates
+  std::vector<planner::AggregatePlan::AggTerm> agg_terms;
+  for (auto column_id : column_ids) {
+    planner::AggregatePlan::AggTerm max_column_agg(
+        EXPRESSION_TYPE_AGGREGATE_MAX,
+        expression::ExpressionUtil::TupleValueFactory(VALUE_TYPE_INTEGER, 0,
+                                                      column_id), false);
+    agg_terms.push_back(max_column_agg);
+  }
+
+  // 4) Set up predicate (empty)
+  std::unique_ptr<const expression::AbstractExpression> aggregate_predicate(nullptr);
+
+  // 5) Create output table schema
+  auto data_table_schema = sdbench_table->GetSchema();
+  std::vector<catalog::Column> columns;
+  for (auto column_id : column_ids) {
+    columns.push_back(data_table_schema->GetColumn(column_id));
+  }
+
+  std::shared_ptr<const catalog::Schema> output_table_schema(new catalog::Schema(columns));
+
+  // OK) Create the plan node
+  planner::AggregatePlan aggregation_node(
+      std::move(proj_info), std::move(aggregate_predicate), std::move(agg_terms),
+      std::move(group_by_columns), output_table_schema, AGGREGATE_TYPE_PLAIN);
+
+  executor::AggregateExecutor aggregation_executor(&aggregation_node,
+                                                   context.get());
+
+  aggregation_executor.AddChild(&hybrid_scan_executor);
+
+  /////////////////////////////////////////////////////////
   // MATERIALIZE
   /////////////////////////////////////////////////////////
 
   // Create and set up materialization executor
   std::vector<catalog::Column> output_columns;
   std::unordered_map<oid_t, oid_t> old_to_new_cols;
-  oid_t col_itr = 0;
+  col_itr = 0;
   for (auto column_id : column_ids) {
     auto column =
         catalog::Column(VALUE_TYPE_INTEGER,
@@ -466,7 +551,7 @@ void RunDirectTest() {
                                         physify_flag);
 
   executor::MaterializationExecutor mat_executor(&mat_node, nullptr);
-  mat_executor.AddChild(&hybrid_scan_executor);
+  mat_executor.AddChild(&aggregation_executor);
 
   /////////////////////////////////////////////////////////
   // EXECUTE
@@ -555,38 +640,35 @@ void RunInsertTest() {
 
 static void RunAdaptTest() {
   double direct_low_proj = 0.06;
-  double insert_write_ratio = 0.01;
-  double repeat_count = 300;
+  UNUSED_ATTRIBUTE double insert_write_ratio = 0.01;
+  double repeat_count = state.total_ops / state.phase_length;
 
-  for(oid_t repeat_itr = 0; repeat_itr < repeat_count; repeat_itr++){
+  for(oid_t repeat_itr = 0; repeat_itr < repeat_count; repeat_itr++) {
 
     state.projectivity = direct_low_proj;
     state.operator_type = OPERATOR_TYPE_DIRECT;
-    RunDirectTest();
-
-    state.write_ratio = insert_write_ratio;
-    state.operator_type = OPERATOR_TYPE_INSERT;
-    RunInsertTest();
-    state.write_ratio = 0.0;
+    RunModerateQuery();
 
   }
 
 }
 
+std::vector<std::size_t> phase_lengths = {5, 10, 20, 50};
+
 void RunAdaptExperiment() {
-  auto orig_transactions = state.transactions;
-  std::thread index_builder;
 
   // Setup layout tuner
   auto& index_tuner = brain::IndexTuner::GetInstance();
-
-  state.transactions = 20;   // 25
+  std::thread index_builder;
 
   state.projectivity = 1.0;
   state.selectivity = 0.06;
-  state.adapt = true;
   state.column_count = 50;
   state.layout_mode = LAYOUT_TYPE_HYBRID;
+  state.adapt_layout = true;
+
+  state.total_ops = 100;
+
   peloton_layout_mode = state.layout_mode;
 
   // Generate sequence
@@ -594,23 +676,32 @@ void RunAdaptExperiment() {
 
   CreateAndLoadTable((LayoutType)peloton_layout_mode);
 
-  // Reset query counter
-  query_itr = 0;
+  for(auto phase_length : phase_lengths) {
+    // Set phase length
+    state.phase_length = phase_length;
+    LOG_INFO("Phase Length: %lu", state.phase_length);
 
-  // Start index tuner
-  index_tuner.Start();
-  index_tuner.AddTable(sdbench_table.get());
+    // Reset query counter
+    query_itr = 0;
 
-  // Run adapt test
-  RunAdaptTest();
+    // Start index tuner
+    index_tuner.Start();
+    index_tuner.AddTable(sdbench_table.get());
 
-  // Stop index tuner
-  index_tuner.Stop();
-  index_tuner.ClearTables();
+    // Run adapt test
+    RunAdaptTest();
+
+    // Stop index tuner
+    index_tuner.Stop();
+    index_tuner.ClearTables();
+
+    // Drop Indexes
+    DropIndexes();
+
+  }
 
   // Reset
-  state.transactions = orig_transactions;
-  state.adapt = false;
+  state.adapt_layout = false;
   query_itr = 0;
 
   out.close();

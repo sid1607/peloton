@@ -23,7 +23,8 @@ extern configuration state;
 
 void CreateAndLoadTable(LayoutType layout_type);
 
-void RunDirectTest();
+void RunQuery(const std::vector<oid_t>& tuple_key_attrs,
+              const std::vector<oid_t>& index_key_attrs);
 
 void RunInsertTest();
 

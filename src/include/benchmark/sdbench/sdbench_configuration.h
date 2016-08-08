@@ -67,17 +67,20 @@ class configuration {
   // column count
   int column_count;
 
-  // index count
-  int index_count;
-
   // update ratio
   double write_ratio;
 
   // # of times to run operator
-  unsigned long transactions;
+  std::size_t phase_length;
+
+  // total number of ops
+  std::size_t total_ops;
 
   // Adapt the layout ?
-  bool adapt;
+  bool adapt_layout;
+
+  // Adapt the indexes ?
+  bool adapt_indexes;
 
 };
 

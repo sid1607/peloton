@@ -27,6 +27,7 @@
 #include "concurrency/transaction.h"
 #include "concurrency/transaction_manager_factory.h"
 #include "common/macros.h"
+#include "common/logger.h"
 #include "executor/abstract_executor.h"
 #include "executor/insert_executor.h"
 #include "expression/constant_value_expression.h"
@@ -116,6 +117,13 @@ void CreateAndLoadTable(LayoutType layout_type) {
   CreateTable();
 
   LoadTable();
+}
+
+void DropIndexes() {
+
+  // Drop index
+  sdbench_table->DropIndexes();
+
 }
 
 }  // namespace sdbench

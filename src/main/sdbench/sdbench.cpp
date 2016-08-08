@@ -40,9 +40,12 @@ void RunBenchmark() {
     CreateAndLoadTable((LayoutType)peloton_layout_mode);
 
     switch (state.operator_type) {
-      case OPERATOR_TYPE_DIRECT:
-        RunDirectTest();
+      case OPERATOR_TYPE_DIRECT: {
+        std::vector<oid_t> tuple_key_attrs = {2, 4};
+        std::vector<oid_t> index_key_attrs = {0, 1};
+        RunQuery(tuple_key_attrs, index_key_attrs);
         break;
+      }
 
       case OPERATOR_TYPE_INSERT:
         RunInsertTest();

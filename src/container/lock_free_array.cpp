@@ -68,33 +68,6 @@ ValueType LOCK_FREE_ARRAY_TYPE::Find(const std::size_t &offset) const{
 }
 
 LOCK_FREE_ARRAY_TEMPLATE_ARGUMENTS
-ValueType LOCK_FREE_ARRAY_TYPE::FindValid(const std::size_t &offset,
-                                          const ValueType& invalid_value) const {
-  PL_ASSERT(offset <= LOCK_FREE_ARRAY_MAX_SIZE);
-  LOG_TRACE("Find Valid at %lu", offset);
-
-  std::size_t valid_array_itr = 0;
-  std::size_t array_itr;
-
-  for(array_itr = 0;
-      array_itr < lock_free_array_offset;
-      array_itr++){
-    auto value = lock_free_array->at(array_itr);
-    if (value != invalid_value) {
-      // Check offset
-      if(valid_array_itr == offset) {
-        return value;
-      }
-
-      // Update valid value count
-      valid_array_itr++;
-    }
-  }
-
-  return invalid_value;
-}
-
-LOCK_FREE_ARRAY_TEMPLATE_ARGUMENTS
 size_t LOCK_FREE_ARRAY_TYPE::GetSize() const{
   return lock_free_array_offset;
 }
