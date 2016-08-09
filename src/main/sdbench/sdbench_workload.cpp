@@ -86,7 +86,7 @@ std::vector<oid_t> column_counts = {50, 500};
 
 static int GetLowerBound() {
   int tuple_count = state.scale_factor * state.tuples_per_tilegroup;
-  int predicate_offset = 0.9 * tuple_count;
+  int predicate_offset = 0.1 * tuple_count;
 
   LOG_TRACE("Tuple count : %d", tuple_count);
 
@@ -97,7 +97,7 @@ static int GetLowerBound() {
 static int GetUpperBound() {
   int tuple_count = state.scale_factor * state.tuples_per_tilegroup;
   int selected_tuple_count = state.selectivity * tuple_count;
-  int predicate_offset = 0.9 * tuple_count;
+  int predicate_offset = 0.1 * tuple_count;
 
   int upper_bound = predicate_offset + selected_tuple_count;
   return upper_bound;
@@ -275,7 +275,7 @@ static void ExecuteTest(std::vector<executor::AbstractExecutor *> &executors,
     auto duration = timer.GetDuration();
     total_duration += duration;
 
-    WriteOutput(duration);
+    //WriteOutput(duration);
 
     // Construct sample
     brain::Sample index_sample(index_columns_accessed,
@@ -401,23 +401,21 @@ void RunModerateQuery() {
   std::vector<oid_t> tuple_key_attrs;
   std::vector<oid_t> index_key_attrs;
 
-  auto rand_sample = rand() % 10;
-  if(rand_sample <= 3) {
+  UNUSED_ATTRIBUTE auto rand_sample = rand() % 10;
+  //if(rand_sample <= 3) {
     tuple_key_attrs = {3, 4};
     index_key_attrs = {0, 1};
+    /*
   }
-  else if(rand_sample <= 5){
+  else if(rand_sample <= 6){
     tuple_key_attrs = {3, 6};
     index_key_attrs = {0, 1};
   }
-  else if(rand_sample <= 7){
-    tuple_key_attrs = {1, 3};
-    index_key_attrs = {0, 1};
-  }
   else {
-    tuple_key_attrs = {2, 5};
-    index_key_attrs = {0, 1};
+    tuple_key_attrs = {2};
+    index_key_attrs = {0};
   }
+  */
 
   RunQuery(tuple_key_attrs, index_key_attrs);
 }
@@ -456,6 +454,7 @@ void RunQuery(const std::vector<oid_t>& tuple_key_attrs,
   std::vector<ExpressionType> expr_types;
   std::vector<Value> values;
   std::vector<expression::AbstractExpression *> runtime_keys;
+  oid_t col_itr = 0;
 
   // Create index scan predicate
   CreateIndexScanPredicate(index_key_attrs, key_column_ids, expr_types, values);
@@ -503,7 +502,7 @@ void RunQuery(const std::vector<oid_t>& tuple_key_attrs,
 
   // 2) Set up project info
   DirectMapList direct_map_list;
-  oid_t col_itr = 0;
+  col_itr = 0;
   oid_t tuple_idx = 1;  // tuple2
   for (col_itr = 0; col_itr < column_count; col_itr++) {
     direct_map_list.push_back({col_itr, {tuple_idx, col_itr}});
@@ -662,7 +661,6 @@ void RunInsertTest() {
 }
 
 static void RunAdaptTest() {
-  double direct_low_proj = 0.06;
   UNUSED_ATTRIBUTE double insert_write_ratio = 0.01;
   double repeat_count = state.total_ops / state.phase_length;
 
@@ -670,7 +668,6 @@ static void RunAdaptTest() {
 
   for(oid_t repeat_itr = 0; repeat_itr < repeat_count; repeat_itr++) {
 
-    state.projectivity = direct_low_proj;
     state.operator_type = OPERATOR_TYPE_DIRECT;
     RunModerateQuery();
 
@@ -680,7 +677,7 @@ static void RunAdaptTest() {
 
 }
 
-std::vector<std::size_t> phase_lengths = {100};
+std::vector<std::size_t> phase_lengths = {40};
 
 void RunAdaptExperiment() {
 
@@ -690,11 +687,11 @@ void RunAdaptExperiment() {
 
   state.projectivity = 1.0;
   state.selectivity = 0.001;
-  state.column_count = 50;
-  state.layout_mode = LAYOUT_TYPE_HYBRID;
+  state.column_count = 10;
+  state.layout_mode = LAYOUT_TYPE_ROW;
   state.adapt_layout = true;
 
-  state.total_ops = 1000;
+  state.total_ops = 500;
 
   peloton_layout_mode = state.layout_mode;
 

@@ -195,8 +195,7 @@ void BTREE_TEMPLATE_TYPE::Scan(const std::vector<Value> &values,
       FindMaxMinInColumns(leading_column_id, values, key_column_ids, expr_types,
                           non_leading_columns);
 
-      auto indexed_columns = metadata->GetKeySchema()->GetIndexedColumns();
-      for (auto key_column_id : indexed_columns) {
+      for (auto key_column_id : key_column_ids) {
         if (key_column_id == leading_column_id) {
           LOG_TRACE("Leading column : %u", key_column_id);
           continue;

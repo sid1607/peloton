@@ -513,8 +513,6 @@ void IndexTuner::IndexTuneHelper(storage::DataTable* table) {
     return;
   }
 
-  LOG_INFO("Analyze table");
-
   // Add required indices
   Analyze(table);
 

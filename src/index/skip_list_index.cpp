@@ -164,6 +164,7 @@ void SkipListIndex<KeyType, ValueType, KeyComparator, KeyEqualityChecker>::Scan(
 
     oid_t leading_column_offset = 0;
     oid_t leading_column_id = key_column_ids[leading_column_offset];
+    LOG_TRACE("Leading column id : %u", leading_column_id);
     std::vector<std::pair<Value, Value>> intervals;
 
     ConstructIntervals(leading_column_id,
@@ -181,10 +182,9 @@ void SkipListIndex<KeyType, ValueType, KeyComparator, KeyEqualityChecker>::Scan(
                         expr_types,
                         non_leading_columns);
 
-    auto indexed_columns = metadata->GetKeySchema()->GetIndexedColumns();
     oid_t non_leading_column_offset = 0;
 
-    for (auto key_column_id : indexed_columns) {
+    for (auto key_column_id : key_column_ids) {
       if (key_column_id == leading_column_id) {
         LOG_TRACE("Leading column : %u", key_column_id);
         continue;
