@@ -37,6 +37,7 @@ void Usage() {
       "   -y --hybrid_scan_type  :  hybrid scan type\n"
       "   -t --phase-length      :  Length of a phase\n"
       "   -q --total-ops         :  Total # of ops\n"
+      "   -f --full-indexes      :  Only use full indexes\n"
   );
   exit(EXIT_FAILURE);
 }
@@ -54,6 +55,7 @@ static struct option opts[] = {
     {"hybrid_scan_type", optional_argument, NULL, 'y'},
     {"phase-length", optional_argument, NULL, 't'},
     {"total-ops", optional_argument, NULL, 'q'},
+    {"full-indexes", optional_argument, NULL, 'f'},
     {NULL, 0, NULL, 0}
 };
 
@@ -191,6 +193,10 @@ static void ValidateTuplesPerTileGroup(const configuration &state) {
   LOG_INFO("%s : %d", "tuples_per_tilegroup", state.tuples_per_tilegroup);
 }
 
+static void ValidateOnlyUseFullIndexes(const configuration &state) {
+  LOG_INFO("%s : %d", "only_use_full_indexes", state.only_use_full_indexes);
+}
+
 int orig_scale_factor;
 
 void ParseArguments(int argc, char *argv[], configuration &state) {
@@ -216,11 +222,12 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
 
   state.adapt_layout = false;
   state.adapt_indexes = true;
+  state.only_use_full_indexes = false;
 
   // Parse args
   while (1) {
     int idx = 0;
-    int c = getopt_long(argc, argv, "aho:k:s:p:l:t:e:c:w:g:y:i:q:", opts, &idx);
+    int c = getopt_long(argc, argv, "aho:k:s:p:l:t:e:c:w:g:y:i:q:f:", opts, &idx);
 
     if (c == -1) break;
 
@@ -261,6 +268,9 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
       case 'q':
         state.total_ops = atol(optarg);
         break;
+      case 'f':
+        state.only_use_full_indexes = atoi(optarg);
+        break;
 
       case 'h':
         Usage();
@@ -283,6 +293,7 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
     ValidateColumnCount(state);
     ValidateWriteRatio(state);
     ValidateTuplesPerTileGroup(state);
+    ValidateOnlyUseFullIndexes(state);
 
     LOG_INFO("%s : %lu", "total_ops", state.total_ops);
   } else {

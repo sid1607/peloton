@@ -254,7 +254,7 @@ class Index : public Printable {
   virtual size_t GetMemoryFootprint() = 0;
 
   // Get the indexed tile group offset
-  virtual size_t GetIndexedTileGroupOff() {
+  virtual size_t GetIndexedTileGroupOffset() {
     return indexed_tile_group_offset_.load();
   }
 

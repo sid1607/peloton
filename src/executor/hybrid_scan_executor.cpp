@@ -43,7 +43,7 @@ namespace executor {
 HybridScanExecutor::HybridScanExecutor(const planner::AbstractPlan *node,
                                        ExecutorContext *executor_context)
 : AbstractScanExecutor(node, executor_context),
-  indexed_tile_offset_(START_OID) {}
+  indexed_tile_group_offset_(START_OID) {}
 
 bool HybridScanExecutor::DInit() {
   auto status = AbstractScanExecutor::DInit();
@@ -113,14 +113,14 @@ bool HybridScanExecutor::DInit() {
     LOG_TRACE("Hybrid Scan");
 
     table_tile_group_count_ = table_->GetTileGroupCount();
-    int offset = index_->GetIndexedTileGroupOff();
-    indexed_tile_offset_ = (offset == -1) ? INVALID_OID : (oid_t)offset;
+    int offset = index_->GetIndexedTileGroupOffset();
+    indexed_tile_group_offset_ = (offset == -1) ? INVALID_OID : (oid_t)offset;
     block_threshold = 0;
 
-    if (indexed_tile_offset_ == INVALID_OID) {
+    if (indexed_tile_group_offset_ == INVALID_OID) {
       current_tile_group_offset_ = START_OID;
     } else {
-      current_tile_group_offset_ = indexed_tile_offset_ + 1;
+      current_tile_group_offset_ = indexed_tile_group_offset_ + 1;
       std::shared_ptr<storage::TileGroup> tile_group;
       if (current_tile_group_offset_ < table_tile_group_count_) {
         tile_group = table_->GetTileGroup(current_tile_group_offset_);
@@ -310,7 +310,7 @@ bool HybridScanExecutor::DExecute() {
 
     // do two part search
     if (index_done_ == false) {
-      if (indexed_tile_offset_ == INVALID_OID) {
+      if (indexed_tile_group_offset_ == INVALID_OID) {
         index_done_ = true;
       } else {
         ExecPrimaryIndexLookup();

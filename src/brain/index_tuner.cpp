@@ -100,7 +100,7 @@ void IndexTuner::BuildIndex(storage::DataTable *table,
                             std::shared_ptr<index::Index> index) {
 
   auto table_schema = table->GetSchema();
-  auto index_tile_group_offset = index->GetIndexedTileGroupOff();
+  auto index_tile_group_offset = index->GetIndexedTileGroupOffset();
   auto table_tile_group_count = table->GetTileGroupCount();
   oid_t tile_groups_indexed = 0;
 
@@ -193,7 +193,7 @@ double IndexTuner::ComputeWorkloadWriteRatio(const std::vector<brain::Sample>& s
     average_write_ratio = write_ratio * alpha +  (1 - alpha) * average_write_ratio;
   }
 
-  LOG_INFO("Average write Ratio : %.2lf", average_write_ratio);
+  LOG_TRACE("Average write Ratio : %.2lf", average_write_ratio);
 
   // TODO: Use average write ratio to throttle index creation
   return average_write_ratio;
@@ -295,7 +295,7 @@ size_t IndexTuner::CheckIndexStorageFootprint(storage::DataTable *table){
   int max_allowed_indexes = available_storage_space / per_index_storage_space;
 
   LOG_TRACE("Available storage space : %d", available_storage_space);
-  LOG_INFO("Available index count : %d", max_allowed_indexes);
+  LOG_TRACE("Available index count : %d", max_allowed_indexes);
 
   return max_allowed_indexes;
 }
@@ -436,8 +436,8 @@ void UpdateIndexUtility(storage::DataTable* table,
     index_metadata->SetUtility(updated_average_index_utility);
 
     LOG_TRACE("Updated index utility %5.2lf :: %s",
-             updated_average_index_utility,
-             index_metadata->GetInfo().c_str());
+              updated_average_index_utility,
+              index_metadata->GetInfo().c_str());
   }
 
 }
@@ -452,18 +452,17 @@ void PrintIndexInformation(storage::DataTable* table) {
 
     // Get index
     auto index = table->GetIndex(index_itr);
-    auto index_metadata = index->GetMetadata();
 
-    auto indexed_tile_group_offset = index->GetIndexedTileGroupOff();
+    auto indexed_tile_group_offset = index->GetIndexedTileGroupOffset();
 
     // Get percentage completion
-    auto fraction = 0.0;
+    double fraction = 0.0;
     if(table_tilegroup_count != 0){
-      fraction = indexed_tile_group_offset / table_tilegroup_count;
+      fraction = (double) indexed_tile_group_offset / (double) table_tilegroup_count;
       fraction *= 100;
     }
 
-    LOG_INFO("%s %.1f%%", index_metadata->GetInfo().c_str(), fraction);
+    LOG_INFO("%s %.1f%%", index->GetMetadata()->GetInfo().c_str(), fraction);
   }
 
 }
@@ -472,12 +471,6 @@ void IndexTuner::Analyze(storage::DataTable* table) {
 
   // Process all samples in table
   auto& samples = table->GetIndexSamples();
-  auto sample_count = samples.size();
-
-  // Check if we have sufficient number of samples
-  if (sample_count < sample_count_threshold) {
-    return;
-  }
 
   // Check write ratio
   auto average_write_ratio = ComputeWorkloadWriteRatio(samples);
@@ -501,9 +494,6 @@ void IndexTuner::Analyze(storage::DataTable* table) {
   // Add indexes if needed
   AddIndexes(table, suggested_indices, max_indexes_allowed);
 
-  // Clear all current samples in table
-  table->ClearIndexSamples();
-
   // Update index utility
   UpdateIndexUtility(table, sample_frequency_entry_list);
 
@@ -514,12 +504,25 @@ void IndexTuner::Analyze(storage::DataTable* table) {
 
 void IndexTuner::IndexTuneHelper(storage::DataTable* table) {
 
+  // Process all samples in table
+  auto& samples = table->GetIndexSamples();
+  auto sample_count = samples.size();
+
+  // Check if we have sufficient number of samples
+  if (sample_count < sample_count_threshold) {
+    return;
+  }
+
+  LOG_INFO("Analyze table");
+
   // Add required indices
   Analyze(table);
 
   // Build desired indices
   BuildIndices(table);
 
+  // Clear all current samples in table
+  table->ClearIndexSamples();
 }
 
 void IndexTuner::Tune(){

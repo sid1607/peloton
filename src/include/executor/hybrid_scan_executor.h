@@ -41,7 +41,7 @@ class HybridScanExecutor : public AbstractScanExecutor {
 
   storage::DataTable *table_ = nullptr;
 
-  oid_t indexed_tile_offset_ = INVALID_OID;
+  oid_t indexed_tile_group_offset_ = INVALID_OID;
 
   HybridScanType type_ = HYBRID_SCAN_TYPE_INVALID;
 

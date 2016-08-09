@@ -82,6 +82,9 @@ class configuration {
   // Adapt the indexes ?
   bool adapt_indexes;
 
+  // Only use fully materialized indexes ?
+  bool only_use_full_indexes;
+
 };
 
 void Usage(FILE *out);

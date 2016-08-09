@@ -86,7 +86,7 @@ std::vector<oid_t> column_counts = {50, 500};
 
 static int GetLowerBound() {
   int tuple_count = state.scale_factor * state.tuples_per_tilegroup;
-  int predicate_offset = 0.1 * tuple_count;
+  int predicate_offset = 0.9 * tuple_count;
 
   LOG_TRACE("Tuple count : %d", tuple_count);
 
@@ -97,7 +97,7 @@ static int GetLowerBound() {
 static int GetUpperBound() {
   int tuple_count = state.scale_factor * state.tuples_per_tilegroup;
   int selected_tuple_count = state.selectivity * tuple_count;
-  int predicate_offset = 0.1 * tuple_count;
+  int predicate_offset = 0.9 * tuple_count;
 
   int upper_bound = predicate_offset + selected_tuple_count;
   return upper_bound;
@@ -135,8 +135,8 @@ expression::AbstractExpression *CreateScanPredicate(std::vector<oid_t> key_attrs
   const int tuple_start_offset = GetLowerBound();
   const int tuple_end_offset = GetUpperBound();
 
-  LOG_INFO("Lower bound : %d", tuple_start_offset);
-  LOG_INFO("Upper bound : %d", tuple_end_offset);
+  LOG_TRACE("Lower bound : %d", tuple_start_offset);
+  LOG_TRACE("Upper bound : %d", tuple_end_offset);
 
   expression::AbstractExpression *predicate = nullptr;
 
@@ -200,7 +200,9 @@ std::ofstream out("outputfile.summary");
 
 oid_t query_itr;
 
-static void WriteOutput(double duration) {
+double total_duration = 0;
+
+UNUSED_ATTRIBUTE static void WriteOutput(double duration) {
   // Convert to ms
   duration *= 1000;
 
@@ -271,6 +273,7 @@ static void ExecuteTest(std::vector<executor::AbstractExecutor *> &executors,
     // Emit time
     timer.Stop();
     auto duration = timer.GetDuration();
+    total_duration += duration;
 
     WriteOutput(duration);
 
@@ -319,12 +322,26 @@ std::shared_ptr<index::Index> PickIndex(storage::DataTable* table,
   for(index_itr = 0; index_itr < index_count; index_itr++){
     auto index_attrs = table->GetIndexAttrs(index_itr);
 
-    UNUSED_ATTRIBUTE auto index_metadata = table->GetIndex(index_itr)->GetMetadata();
+    auto index = table->GetIndex(index_itr);
+    UNUSED_ATTRIBUTE auto index_metadata = index->GetMetadata();
     LOG_TRACE("Available Index :: %s", index_metadata->GetInfo().c_str());
 
     // Some attribute did not match
     if(index_attrs != query_attrs_set) {
       continue;
+    }
+
+    // Fully constructed or not ?
+    if(state.only_use_full_indexes == true) {
+      auto indexed_tg_count = index->GetIndexedTileGroupOffset();
+      auto table_tg_count = table->GetTileGroupCount();
+
+      LOG_INFO("Indexed TG Count : %lu", indexed_tg_count);
+      LOG_INFO("Table TG Count : %lu", table_tg_count);
+
+      if(indexed_tg_count < table_tg_count){
+        continue;
+      }
     }
 
     // Exact match
@@ -339,11 +356,11 @@ std::shared_ptr<index::Index> PickIndex(storage::DataTable* table,
 
   // Found index
   if(query_index_found == true) {
-    LOG_TRACE("Found available Index");
+    LOG_INFO("Found available Index");
     index = table->GetIndex(index_itr);
   }
   else {
-    LOG_TRACE("Did not find available index");
+    LOG_INFO("Did not find available index");
   }
 
   return index;
@@ -373,7 +390,7 @@ void RunSimpleQuery() {
   for(auto tuple_key_attr : tuple_key_attrs){
     os << tuple_key_attr << " ";
   }
-  LOG_INFO("%s", os.str().c_str());
+  LOG_TRACE("%s", os.str().c_str());
 
   RunQuery(tuple_key_attrs, index_key_attrs);
 
@@ -389,13 +406,17 @@ void RunModerateQuery() {
     tuple_key_attrs = {3, 4};
     index_key_attrs = {0, 1};
   }
-  else if(rand_sample <= 6){
+  else if(rand_sample <= 5){
     tuple_key_attrs = {3, 6};
     index_key_attrs = {0, 1};
   }
+  else if(rand_sample <= 7){
+    tuple_key_attrs = {1, 3};
+    index_key_attrs = {0, 1};
+  }
   else {
-    tuple_key_attrs = {2};
-    index_key_attrs = {0};
+    tuple_key_attrs = {2, 5};
+    index_key_attrs = {0, 1};
   }
 
   RunQuery(tuple_key_attrs, index_key_attrs);
@@ -454,6 +475,8 @@ void RunQuery(const std::vector<oid_t>& tuple_key_attrs,
 
     hybrid_scan_type = HYBRID_SCAN_TYPE_HYBRID;
   }
+
+  LOG_INFO("Hybrid scan type : %d", hybrid_scan_type);
 
   planner::HybridScanPlan hybrid_scan_node(sdbench_table.get(),
                                            predicate,
@@ -643,6 +666,8 @@ static void RunAdaptTest() {
   UNUSED_ATTRIBUTE double insert_write_ratio = 0.01;
   double repeat_count = state.total_ops / state.phase_length;
 
+  total_duration = 0;
+
   for(oid_t repeat_itr = 0; repeat_itr < repeat_count; repeat_itr++) {
 
     state.projectivity = direct_low_proj;
@@ -651,9 +676,11 @@ static void RunAdaptTest() {
 
   }
 
+  LOG_INFO("Total Duration : %.2lf", total_duration);
+
 }
 
-std::vector<std::size_t> phase_lengths = {5, 10, 20, 50};
+std::vector<std::size_t> phase_lengths = {100};
 
 void RunAdaptExperiment() {
 
@@ -662,12 +689,12 @@ void RunAdaptExperiment() {
   std::thread index_builder;
 
   state.projectivity = 1.0;
-  state.selectivity = 0.06;
+  state.selectivity = 0.001;
   state.column_count = 50;
   state.layout_mode = LAYOUT_TYPE_HYBRID;
   state.adapt_layout = true;
 
-  state.total_ops = 100;
+  state.total_ops = 1000;
 
   peloton_layout_mode = state.layout_mode;
 
