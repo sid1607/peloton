@@ -281,6 +281,8 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
   ycsb::state.update_ratio = 0.5;
   ycsb::state.backend_count = 2;
   ycsb::state.transaction_count = 0;
+  ycsb::state.ops_count = 1;
+  ycsb::state.abort_mode = false;
 
   // Default Values
   tpcc::state.warehouse_count = 2;  // 10
@@ -429,6 +431,7 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
     ycsb::ValidateTransactionCount(ycsb::state);
     ycsb::ValidateTransactionCount(ycsb::state);
     ycsb::ValidateOpsCount(ycsb::state);
+    ycsb::ValidateAbortMode(ycsb::state);
 
   }
   // Print TPCC configuration

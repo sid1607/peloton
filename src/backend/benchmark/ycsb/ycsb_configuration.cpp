@@ -109,6 +109,10 @@ void ValidateOpsCount(const configuration &state) {
   LOG_INFO("%s : %d", "ops_count", state.ops_count);
 }
 
+void ValidateAbortMode(const configuration &state) {
+  LOG_INFO("%s : %d", "abort_mode", state.abort_mode);
+}
+
 void ParseArguments(int argc, char *argv[], configuration &state) {
 
   // Default Values
@@ -118,7 +122,7 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   state.update_ratio = 0.5;
   state.backend_count = 2;
   state.transaction_count = 0;
-  state.ops_count = 0;
+  state.ops_count = 1;
   state.abort_mode = false;
 
   // Parse args
@@ -175,6 +179,7 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   ValidateDuration(state);
   ValidateTransactionCount(state);
   ValidateOpsCount(state);
+  ValidateAbortMode(state);
 
 }
 

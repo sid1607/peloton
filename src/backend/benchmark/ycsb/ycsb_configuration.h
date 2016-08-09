@@ -85,6 +85,8 @@ void ValidateTransactionCount(const configuration &state);
 
 void ValidateOpsCount(const configuration &state);
 
+void ValidateAbortMode(const configuration &state);
+
 }  // namespace ycsb
 }  // namespace benchmark
 }  // namespace peloton
