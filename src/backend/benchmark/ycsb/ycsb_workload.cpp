@@ -479,7 +479,8 @@ bool RunInsert(UNUSED_ATTRIBUTE ZipfDistribution &zipf,
     tuple->SetValue(col_itr, field_value, pool.get());
   }
 
-  planner::InsertPlan insert_node(user_table, std::move(tuple));
+  oid_t bulk_insert_count = state.ops_count;
+  planner::InsertPlan insert_node(user_table, std::move(tuple), bulk_insert_count);
   executor::InsertExecutor insert_executor(&insert_node, context.get());
 
   /////////////////////////////////////////////////////////
@@ -491,8 +492,17 @@ bool RunInsert(UNUSED_ATTRIBUTE ZipfDistribution &zipf,
 
   ExecuteTest(executors);
 
-  auto txn_status = EndTransaction(txn);
-  return txn_status;
+  if(state.abort_mode == true) {
+    txn_manager.AbortTransaction();
+    return true;
+  }
+  else {
+    txn_manager.CommitTransaction();
+    return true;
+  }
+
+  //auto txn_status = EndTransaction(txn);
+  //return txn_status;
 }
 
 }  // namespace ycsb

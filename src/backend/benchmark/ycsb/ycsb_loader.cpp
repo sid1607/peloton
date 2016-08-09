@@ -113,7 +113,7 @@ void CreateYCSBDatabase() {
       "primary_index",
       user_table_pkey_index_oid,
       INDEX_TYPE_BTREE,
-      INDEX_CONSTRAINT_TYPE_PRIMARY_KEY,
+      INDEX_CONSTRAINT_TYPE_INVALID,
       tuple_schema, key_schema, unique,
       GetBackendType(peloton_logging_mode));
 

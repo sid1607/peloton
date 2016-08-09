@@ -72,11 +72,12 @@ size_t GetLogFileSize();
 
 static void WriteOutput(double value) {
   LOG_INFO("----------------------------------------------------------");
-  LOG_INFO("%d %d %lf %d %d %d %d %d %d %d %d :: %lf", state.benchmark_type,
+  LOG_INFO("%d %d %lf %d %d %d %d %d %d %d %d %d %d :: %lf", state.benchmark_type,
            state.logging_type, ycsb::state.update_ratio,
            ycsb::state.backend_count, ycsb::state.scale_factor,
            ycsb::state.duration, state.nvm_latency, state.pcommit_latency,
-           state.flush_mode, state.asynchronous_mode, state.wait_timeout, value);
+           state.flush_mode, state.asynchronous_mode, state.wait_timeout,
+           ycsb::state.ops_count, ycsb::state.abort_mode, value);
 
   out << state.benchmark_type << " ";
   out << state.logging_type << " ";
@@ -89,6 +90,8 @@ static void WriteOutput(double value) {
   out << state.flush_mode << " ";
   out << state.asynchronous_mode << " ";
   out << state.wait_timeout << " ";
+  out << ycsb::state.ops_count << " ";
+  out << ycsb::state.abort_mode << " ";
   out << value << "\n";
   out.flush();
 }

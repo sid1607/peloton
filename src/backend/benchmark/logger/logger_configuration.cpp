@@ -292,9 +292,9 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
   while (1) {
     int idx = 0;
     // logger - a:e:f:g:hl:n:p:v:w:y:
-    // ycsb   - b:c:d:k:t:u:
+    // ycsb   - b:c:d:k:t:u:o:r:
     // tpcc   - b:d:k:t:
-    int c = getopt_long(argc, argv, "a:e:f:g:hil:n:p:v:w:y:b:c:d:k:u:t:x:z:",
+    int c = getopt_long(argc, argv, "a:e:f:g:hil:n:p:v:w:y:b:c:d:k:u:t:o:r:x:z:",
                         opts, &idx);
 
     if (c == -1) break;
@@ -378,6 +378,12 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
       case 'u':
         ycsb::state.update_ratio = atof(optarg);
         break;
+      case 'o':
+        ycsb::state.ops_count = atoi(optarg);
+        break;
+      case 'r':
+        ycsb::state.abort_mode = atoi(optarg);
+        break;
 
       case 'h':
         Usage(stderr);
@@ -421,6 +427,8 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
     ycsb::ValidateBackendCount(ycsb::state);
     ycsb::ValidateDuration(ycsb::state);
     ycsb::ValidateTransactionCount(ycsb::state);
+    ycsb::ValidateTransactionCount(ycsb::state);
+    ycsb::ValidateOpsCount(ycsb::state);
 
   }
   // Print TPCC configuration

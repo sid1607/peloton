@@ -30,7 +30,9 @@ void Usage(FILE *out) {
           "   -k --scale-factor      :  # of tuples \n"
           "   -u --update-ratio      :  Fraction of updates \n"
           "   -t --transaction-count :  # of transactions \n"
-          );
+          "   -o --op-count          :  # of ops per transaction \n"
+          "   -r --abort-mode        :  Abort transactions \n"
+  );
 }
 
 static struct option opts[] = {
@@ -40,6 +42,8 @@ static struct option opts[] = {
     { "scale-factor", optional_argument, NULL, 'k'},
     { "update-ratio", optional_argument, NULL, 'u'},
     { "transaction_count", optional_argument, NULL, 't'},
+    { "op-count", optional_argument, NULL, 'o'},
+    { "abort-mode", optional_argument, NULL, 'r'},
     { NULL, 0, NULL, 0}};
 
 void ValidateScaleFactor(const configuration &state) {
@@ -96,6 +100,15 @@ void ValidateTransactionCount(const configuration &state) {
   LOG_INFO("%s : %d", "transaction_count", state.transaction_count);
 }
 
+void ValidateOpsCount(const configuration &state) {
+  if (state.ops_count < 0) {
+    LOG_ERROR("Invalid ops_count :: %d", state.ops_count);
+    exit(EXIT_FAILURE);
+  }
+
+  LOG_INFO("%s : %d", "ops_count", state.ops_count);
+}
+
 void ParseArguments(int argc, char *argv[], configuration &state) {
 
   // Default Values
@@ -105,11 +118,13 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   state.update_ratio = 0.5;
   state.backend_count = 2;
   state.transaction_count = 0;
+  state.ops_count = 0;
+  state.abort_mode = false;
 
   // Parse args
   while (1) {
     int idx = 0;
-    int c = getopt_long(argc, argv, "hb:c:d:k:t:u:", opts, &idx);
+    int c = getopt_long(argc, argv, "hb:c:d:k:t:u:o:r:", opts, &idx);
 
     if (c == -1) break;
 
@@ -132,6 +147,12 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
       case 'u':
         state.update_ratio = atof(optarg);
         break;
+      case 'o':
+        state.ops_count = atoi(optarg);
+        break;
+      case 'r':
+        state.abort_mode = atoi(optarg);
+        break;
 
       case 'h':
         Usage(stderr);
@@ -153,6 +174,7 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   ValidateUpdateRatio(state);
   ValidateDuration(state);
   ValidateTransactionCount(state);
+  ValidateOpsCount(state);
 
 }
 

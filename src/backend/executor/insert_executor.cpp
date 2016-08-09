@@ -139,6 +139,8 @@ bool InsertExecutor::DExecute() {
       tuple = project_tuple.get();
     }
 
+    LOG_TRACE("Bulk insert count : %u", bulk_insert_count);
+
     // Bulk Insert Mode
     for (oid_t insert_itr = 0; insert_itr < bulk_insert_count; insert_itr++) {
 

@@ -57,6 +57,12 @@ class configuration {
 
   // # of transaction
   int transaction_count;
+
+  // # of ops per transaction
+  int ops_count;
+
+  // abort mode
+  bool abort_mode;
 };
 
 extern configuration state;
@@ -76,6 +82,8 @@ void ValidateBackendCount(const configuration &state);
 void ValidateDuration(const configuration &state);
 
 void ValidateTransactionCount(const configuration &state);
+
+void ValidateOpsCount(const configuration &state);
 
 }  // namespace ycsb
 }  // namespace benchmark
