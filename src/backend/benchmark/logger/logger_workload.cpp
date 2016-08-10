@@ -72,14 +72,15 @@ size_t GetLogFileSize();
 
 static void WriteOutput(double value) {
   LOG_INFO("----------------------------------------------------------");
-  LOG_INFO("%d %d %lf %d %d %d %d %d %d %d %d %d %d %lu %d %lf %d :: %lf", state.benchmark_type,
+  LOG_INFO("%d %d %lf %d %d %d %d %d %d %d %d %d %d %lu %d %lf %d %lf :: %lf", state.benchmark_type,
            state.logging_type, ycsb::state.update_ratio,
            ycsb::state.backend_count, ycsb::state.scale_factor,
            ycsb::state.duration, state.nvm_latency, state.pcommit_latency,
            state.flush_mode, state.asynchronous_mode, state.wait_timeout,
            ycsb::state.ops_count, ycsb::state.abort_mode,
            state.long_running_txn_count, ycsb::state.goetz_mode,
-           ycsb::state.redo_fraction, ycsb::state.redo_length, value);
+           ycsb::state.redo_fraction, ycsb::state.redo_length,
+           state.hybrid_storage_ratio, value);
 
   out << state.benchmark_type << " ";
   out << state.logging_type << " ";
@@ -98,6 +99,7 @@ static void WriteOutput(double value) {
   out << ycsb::state.goetz_mode << " ";
   out << ycsb::state.redo_fraction << " ";
   out << ycsb::state.redo_length << " ";
+  out << state.hybrid_storage_ratio << " ";
   out << value << "\n";
   out.flush();
 }

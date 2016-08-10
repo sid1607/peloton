@@ -37,6 +37,9 @@ extern int peloton_flush_mode;
 // PCOMMIT latency (for NVM WBL)
 extern int peloton_pcommit_latency;
 
+// Ratio of tile groups on NVM
+extern double peloton_hybrid_storage_ratio;
+
 namespace peloton {
 namespace benchmark {
 
@@ -63,6 +66,7 @@ void RunBenchmark() {
   peloton_wait_timeout = state.wait_timeout;
   peloton_flush_mode = state.flush_mode;
   peloton_pcommit_latency = state.pcommit_latency;
+  peloton_hybrid_storage_ratio = state.hybrid_storage_ratio;
 
   // LONG RUNNING TXNS
   auto& txn_manager = concurrency::TransactionManagerFactory::GetInstance();

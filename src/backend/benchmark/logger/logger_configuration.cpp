@@ -26,6 +26,8 @@ extern ReplicationType peloton_replication_mode;
 
 extern CheckpointType peloton_checkpoint_mode;
 
+extern double peloton_hybrid_storage_ratio;
+
 namespace peloton {
 namespace benchmark {
 namespace logger {
@@ -44,7 +46,8 @@ void Usage(FILE* out) {
           "   -w --commit-interval   :  Group commit interval \n"
           "   -y --benchmark-type    :  Benchmark type \n"
           "   -x --replication-port  :  port for follower \n"
-          "   -q --long-running-txn  :  long running txn count \n");
+          "   -q --long-running-txn  :  long running txn count \n"
+          "   -x --hybrid-storage    :  hybrid storage ratio \n");
 }
 
 static struct option opts[] = {
@@ -58,11 +61,13 @@ static struct option opts[] = {
     {"skew", optional_argument, NULL, 's'},
     {"flush-mode", optional_argument, NULL, 'v'},
     {"commit-interval", optional_argument, NULL, 'w'},
-    {"replication-port", optional_argument, NULL, 'x'},
     {"benchmark-type", optional_argument, NULL, 'y'},
     {"remote-endpoint", optional_argument, NULL, 'z'},
     {"long-running-txn", optional_argument, NULL, 'q'},
+    {"hybrid-storage", optional_argument, NULL, 'x'},
     {NULL, 0, NULL, 0}};
+
+//{"replication-port", optional_argument, NULL, 'x'},
 
 static void ValidateLoggingType(const configuration& state) {
   if (state.logging_type <= LOGGING_TYPE_INVALID) {
@@ -262,6 +267,15 @@ static void ValidateLongRunningTxnCount(configuration& state){
   LOG_INFO("long_running_txn_count :: %lu", state.long_running_txn_count);
 }
 
+static void ValidateHybridStorageRatio(const configuration& state) {
+  if (state.hybrid_storage_ratio < 0 || state.hybrid_storage_ratio > 1) {
+    LOG_ERROR("Invalid hybrid_storage_ratio :: %lf", state.hybrid_storage_ratio);
+    exit(EXIT_FAILURE);
+  }
+
+  LOG_INFO("hybrid_storage_ratio :: %lf", state.hybrid_storage_ratio);
+}
+
 void ParseArguments(int argc, char* argv[], configuration& state) {
   // Default Logger Values
   state.logging_type = LOGGING_TYPE_NVM_WAL;
@@ -280,6 +294,7 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
   state.replication_mode = SYNC_REPLICATION;
   state.checkpoint_type = CHECKPOINT_TYPE_INVALID;
   state.long_running_txn_count = 0;
+  state.hybrid_storage_ratio = 0;
 
   // Default YCSB Values
   ycsb::state.scale_factor = 1;
@@ -308,7 +323,7 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
     // logger - a:e:f:g:hl:n:p:v:w:y:q:
     // ycsb   - b:c:d:k:t:u:o:r:p:m:n:
     // tpcc   - b:d:k:t:
-    int c = getopt_long(argc, argv, "a:e:f:g:hil:n:p:v:w:y:b:c:d:k:u:t:o:r:x:z:q:s:j:m:",
+    int c = getopt_long(argc, argv, "a:b:c:d:e:f:g:hij:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:",
                         opts, &idx);
 
     if (c == -1) break;
@@ -357,9 +372,9 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
       case 'w':
         state.wait_timeout = atoi(optarg);
         break;
-      case 'x':
-        state.replication_port = atoi(optarg);
-        break;
+      //case 'x':
+      //  state.replication_port = atoi(optarg);
+      //  break;
       case 'z':
         state.remote_endpoint = new char[strlen(optarg)];
         memcpy(state.remote_endpoint, optarg, strlen(optarg));
@@ -370,6 +385,9 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
         break;
       case 'q':
         state.long_running_txn_count = atol(optarg);
+        break;
+      case 'x':
+        state.hybrid_storage_ratio = atof(optarg);
         break;
 
       // YCSB
@@ -445,6 +463,7 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
   ValidateNVMLatency(state);
   ValidatePCOMMITLatency(state);
   ValidateLongRunningTxnCount(state);
+  ValidateHybridStorageRatio(state);
 
   // Print YCSB configuration
   if (state.benchmark_type == BENCHMARK_TYPE_YCSB) {

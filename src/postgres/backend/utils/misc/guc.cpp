@@ -550,11 +550,15 @@ int peloton_server_port;
 char *peloton_endpoint_address;
 
 ReplicationType peloton_replication_mode;
+
 // Flush mode (for NVM WBL)
 int peloton_flush_mode;
 
 // pcommit latency (for NVM WBL)
 int peloton_pcommit_latency;
+
+// Ratio of tile groups on NVM
+double peloton_hybrid_storage_ratio;
 
 /*
  * This really belongs in pg_shmem.c, but is defined here so that it doesn't

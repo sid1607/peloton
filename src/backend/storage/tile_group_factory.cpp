@@ -20,6 +20,9 @@
 // Logging mode
 extern LoggingType peloton_logging_mode;
 
+// Ratio of tile groups on NVM
+extern double peloton_hybrid_storage_ratio;
+
 namespace peloton {
 namespace storage {
 
@@ -30,6 +33,14 @@ TileGroup *TileGroupFactory::GetTileGroup(
 
   // Allocate the data on appropriate backend
   BackendType backend_type = GetBackendType(peloton_logging_mode);
+
+  // Get random ratio
+  auto random_ratio = ((float)rand())/RAND_MAX;
+
+  // Check if we need to use NVM for storage
+  if(random_ratio < peloton_hybrid_storage_ratio) {
+    backend_type = BACKEND_TYPE_NVM;
+  }
 
   TileGroupHeader *tile_header = new TileGroupHeader(backend_type, tuple_count);
   TileGroup *tile_group = new TileGroup(backend_type, tile_header, table,
