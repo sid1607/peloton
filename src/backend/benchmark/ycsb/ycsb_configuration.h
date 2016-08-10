@@ -96,6 +96,12 @@ void ValidateOpsCount(const configuration &state);
 
 void ValidateAbortMode(const configuration &state);
 
+void ValidateGoetzMode(const configuration &state);
+
+void ValidateRedoFraction(const configuration &state);
+
+void ValidateRedoLength(const configuration &state);
+
 }  // namespace ycsb
 }  // namespace benchmark
 }  // namespace peloton

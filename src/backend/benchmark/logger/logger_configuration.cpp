@@ -290,6 +290,9 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
   ycsb::state.transaction_count = 0;
   ycsb::state.ops_count = 1;
   ycsb::state.abort_mode = false;
+  ycsb::state.goetz_mode = false;
+  ycsb::state.redo_fraction = 0.1;
+  ycsb::state.redo_length = 1;
 
   // Default Values
   tpcc::state.warehouse_count = 2;  // 10
@@ -297,13 +300,15 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
   tpcc::state.backend_count = 2;
   tpcc::state.transaction_count = 0;
 
+  srand(23);
+
   // Parse args
   while (1) {
     int idx = 0;
     // logger - a:e:f:g:hl:n:p:v:w:y:q:
-    // ycsb   - b:c:d:k:t:u:o:r:
+    // ycsb   - b:c:d:k:t:u:o:r:p:m:n:
     // tpcc   - b:d:k:t:
-    int c = getopt_long(argc, argv, "a:e:f:g:hil:n:p:v:w:y:b:c:d:k:u:t:o:r:x:z:q:",
+    int c = getopt_long(argc, argv, "a:e:f:g:hil:n:p:v:w:y:b:c:d:k:u:t:o:r:x:z:q:s:j:m:",
                         opts, &idx);
 
     if (c == -1) break;
@@ -396,6 +401,15 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
       case 'r':
         ycsb::state.abort_mode = atoi(optarg);
         break;
+      case 's':
+        ycsb::state.goetz_mode = atoi(optarg);
+        break;
+      case 'j':
+        ycsb::state.redo_fraction = atof(optarg);
+        break;
+      case 'm':
+        ycsb::state.redo_length = atoi(optarg);
+        break;
 
       case 'h':
         Usage(stderr);
@@ -443,6 +457,9 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
     ycsb::ValidateTransactionCount(ycsb::state);
     ycsb::ValidateOpsCount(ycsb::state);
     ycsb::ValidateAbortMode(ycsb::state);
+    ycsb::ValidateGoetzMode(ycsb::state);
+    ycsb::ValidateRedoFraction(ycsb::state);
+    ycsb::ValidateRedoLength(ycsb::state);
 
   }
   // Print TPCC configuration

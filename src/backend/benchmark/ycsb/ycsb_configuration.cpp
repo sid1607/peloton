@@ -32,9 +32,9 @@ void Usage(FILE *out) {
           "   -t --transaction-count :  # of transactions \n"
           "   -o --op-count          :  # of ops per transaction \n"
           "   -r --abort-mode        :  Abort transactions \n"
-          "   -g --goetz-mode        :  Goetz mode \n"
-          "   -f --redo-fraction     :  Fraction of ops requiring redo \n"
-          "   -l --redo-length       :  Length of redo process \n"
+          "   -s --goetz-mode        :  Goetz mode \n"
+          "   -j --redo-fraction     :  Fraction of ops requiring redo \n"
+          "   -m --redo-length       :  Length of redo process \n"
   );
 }
 
@@ -47,9 +47,9 @@ static struct option opts[] = {
     { "transaction_count", optional_argument, NULL, 't'},
     { "op-count", optional_argument, NULL, 'o'},
     { "abort-mode", optional_argument, NULL, 'r'},
-    { "goetz-mode", optional_argument, NULL, 'g'},
-    { "redo-fraction", optional_argument, NULL, 'f'},
-    { "redo-length", optional_argument, NULL, 'l'},
+    { "goetz-mode", optional_argument, NULL, 'p'},
+    { "redo-fraction", optional_argument, NULL, 'm'},
+    { "redo-length", optional_argument, NULL, 'n'},
     { NULL, 0, NULL, 0}};
 
 void ValidateScaleFactor(const configuration &state) {
@@ -161,7 +161,7 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   // Parse args
   while (1) {
     int idx = 0;
-    int c = getopt_long(argc, argv, "hb:c:d:k:t:u:o:r:g:f:l:", opts, &idx);
+    int c = getopt_long(argc, argv, "hb:c:d:k:t:u:o:r:p:m:n:", opts, &idx);
 
     if (c == -1) break;
 
@@ -190,13 +190,13 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
       case 'r':
         state.abort_mode = atoi(optarg);
         break;
-      case 'g':
+      case 'p':
         state.goetz_mode = atoi(optarg);
         break;
-      case 'f':
+      case 'm':
         state.redo_fraction = atof(optarg);
         break;
-      case 'l':
+      case 'n':
         state.redo_length = atoi(optarg);
         break;
 
