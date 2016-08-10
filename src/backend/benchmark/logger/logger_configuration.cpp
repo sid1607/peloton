@@ -219,6 +219,17 @@ static void ValidatePCOMMITLatency(const configuration& state) {
 static void ValidateLogFileDir(configuration& state) {
   struct stat data_stat;
 
+  // Using hybrid storage
+  if(state.hybrid_storage_ratio != 0){
+    int status = stat(NVM_DIR, &data_stat);
+    if (status == 0 && S_ISDIR(data_stat.st_mode)) {
+      state.log_file_dir = NVM_DIR;
+    }
+
+    LOG_INFO("log_file_dir :: %s", state.log_file_dir.c_str());
+    return;
+  }
+
   // Assign log file dir based on logging type
   switch (state.logging_type) {
     // Log file on NVM
