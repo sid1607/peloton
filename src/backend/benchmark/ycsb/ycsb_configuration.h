@@ -63,6 +63,15 @@ class configuration {
 
   // abort mode
   bool abort_mode;
+
+  // goetz mode (on-demand redo)
+  bool goetz_mode;
+
+  // fraction of ops requiring redo
+  double redo_fraction;
+
+  // length of redo chain
+  int redo_length;
 };
 
 extern configuration state;

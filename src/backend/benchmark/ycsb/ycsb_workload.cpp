@@ -175,7 +175,7 @@ class ZipfDistribution {
 // TRANSACTION TYPES
 /////////////////////////////////////////////////////////
 
-bool RunRead(ZipfDistribution &zipf);
+bool RunRead(ZipfDistribution &zipf, oid_t next_insert_key);
 
 bool RunInsert(ZipfDistribution &zipf, oid_t next_insert_key);
 
@@ -238,7 +238,8 @@ void RunBackend(oid_t thread_id) {
       transaction_status = RunInsert(zipf, next_insert_key);
     }
     else {
-      transaction_status = RunRead(zipf);
+      next_insert_key += state.backend_count;
+      transaction_status = RunRead(zipf, next_insert_key);
     }
 
     // Update transaction count if it committed
@@ -364,7 +365,29 @@ static bool EndTransaction(concurrency::Transaction *txn) {
 // TRANSACTIONS
 /////////////////////////////////////////////////////////
 
-bool RunRead(ZipfDistribution &zipf) {
+int GetRedoLength() {
+
+  // Check for goetz mode
+  if(state.goetz_mode == false) {
+    return 0;
+  }
+
+  // Get random ratio
+  auto random_ratio = ((float)rand())/RAND_MAX;
+
+  // Check if we need to add executors
+  if(random_ratio < state.redo_fraction) {
+
+    // Get redo length
+    auto redo_length = rand() % (state.redo_length + 1);
+    return redo_length;
+  }
+
+  return 0;
+}
+
+bool RunRead(ZipfDistribution &zipf,
+             oid_t next_insert_key) {
   auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
 
 
@@ -445,6 +468,36 @@ bool RunRead(ZipfDistribution &zipf) {
   std::vector<executor::AbstractExecutor *> executors;
   executors.push_back(&mat_executor);
 
+  /////////////////////////////////////////////////////////
+  // INSERT
+  /////////////////////////////////////////////////////////
+
+  const oid_t col_count = state.column_count + 1;
+  auto table_schema = user_table->GetSchema();
+  const bool allocate = true;
+  std::string field_raw_value(ycsb_field_length - 1, 'o');
+
+  std::unique_ptr<VarlenPool> pool(new VarlenPool(BACKEND_TYPE_MM));
+
+  std::unique_ptr<storage::Tuple> tuple(new storage::Tuple(table_schema, allocate));
+  auto key_value = ValueFactory::GetIntegerValue(next_insert_key);
+  auto field_value = ValueFactory::GetStringValue(field_raw_value);
+
+  tuple->SetValue(0, key_value, nullptr);
+  for (oid_t col_itr = 1; col_itr < col_count; col_itr++) {
+    tuple->SetValue(col_itr, field_value, pool.get());
+  }
+
+  oid_t bulk_insert_count = state.ops_count;
+  planner::InsertPlan insert_node(user_table, std::move(tuple), bulk_insert_count);
+  executor::InsertExecutor insert_executor(&insert_node, context.get());
+
+  // Add Goetz executors
+  auto redo_length = GetRedoLength();
+  for(int redo_itr = 0; redo_itr < redo_length; redo_itr++) {
+    executors.push_back(&insert_executor);
+  }
+
   ExecuteTest(executors);
 
   auto txn_status = EndTransaction(txn);
@@ -490,7 +543,14 @@ bool RunInsert(UNUSED_ATTRIBUTE ZipfDistribution &zipf,
   std::vector<executor::AbstractExecutor *> executors;
   executors.push_back(&insert_executor);
 
+  // Add Goetz executors
+  auto redo_length = GetRedoLength();
+  for(int redo_itr = 0; redo_itr < redo_length; redo_itr++) {
+    executors.push_back(&insert_executor);
+  }
+
   ExecuteTest(executors);
+
 
   // ABORT MODE
   /*
@@ -502,7 +562,7 @@ bool RunInsert(UNUSED_ATTRIBUTE ZipfDistribution &zipf,
     txn_manager.CommitTransaction();
     return true;
   }
-  */
+   */
 
   auto txn_status = EndTransaction(txn);
   return txn_status;

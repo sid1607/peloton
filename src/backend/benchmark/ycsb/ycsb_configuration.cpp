@@ -32,6 +32,9 @@ void Usage(FILE *out) {
           "   -t --transaction-count :  # of transactions \n"
           "   -o --op-count          :  # of ops per transaction \n"
           "   -r --abort-mode        :  Abort transactions \n"
+          "   -g --goetz-mode        :  Goetz mode \n"
+          "   -f --redo-fraction     :  Fraction of ops requiring redo \n"
+          "   -l --redo-length       :  Length of redo process \n"
   );
 }
 
@@ -44,6 +47,9 @@ static struct option opts[] = {
     { "transaction_count", optional_argument, NULL, 't'},
     { "op-count", optional_argument, NULL, 'o'},
     { "abort-mode", optional_argument, NULL, 'r'},
+    { "goetz-mode", optional_argument, NULL, 'g'},
+    { "redo-fraction", optional_argument, NULL, 'f'},
+    { "redo-length", optional_argument, NULL, 'l'},
     { NULL, 0, NULL, 0}};
 
 void ValidateScaleFactor(const configuration &state) {
@@ -113,6 +119,28 @@ void ValidateAbortMode(const configuration &state) {
   LOG_INFO("%s : %d", "abort_mode", state.abort_mode);
 }
 
+void ValidateGoetzMode(const configuration &state) {
+  LOG_INFO("%s : %d", "goetz_mode", state.goetz_mode);
+}
+
+void ValidateRedoFraction(const configuration &state) {
+  if (state.redo_fraction < 0 || state.redo_fraction > 1) {
+    LOG_ERROR("Invalid redo_fraction :: %.3lf", state.redo_fraction);
+    exit(EXIT_FAILURE);
+  }
+
+  LOG_INFO("%s : %.3lf", "redo_fraction", state.redo_fraction);
+}
+
+void ValidateRedoLength(const configuration &state) {
+  if (state.redo_length < 0) {
+    LOG_ERROR("Invalid redo_length :: %d", state.redo_length);
+    exit(EXIT_FAILURE);
+  }
+
+  LOG_INFO("%s : %d", "redo_length", state.redo_length);
+}
+
 void ParseArguments(int argc, char *argv[], configuration &state) {
 
   // Default Values
@@ -124,11 +152,16 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   state.transaction_count = 0;
   state.ops_count = 1;
   state.abort_mode = false;
+  state.goetz_mode = false;
+  state.redo_fraction = 0.1;
+  state.redo_length = 1;
+
+  srand(23);
 
   // Parse args
   while (1) {
     int idx = 0;
-    int c = getopt_long(argc, argv, "hb:c:d:k:t:u:o:r:", opts, &idx);
+    int c = getopt_long(argc, argv, "hb:c:d:k:t:u:o:r:g:f:l:", opts, &idx);
 
     if (c == -1) break;
 
@@ -157,6 +190,15 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
       case 'r':
         state.abort_mode = atoi(optarg);
         break;
+      case 'g':
+        state.goetz_mode = atoi(optarg);
+        break;
+      case 'f':
+        state.redo_fraction = atof(optarg);
+        break;
+      case 'l':
+        state.redo_length = atoi(optarg);
+        break;
 
       case 'h':
         Usage(stderr);
@@ -180,6 +222,9 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   ValidateTransactionCount(state);
   ValidateOpsCount(state);
   ValidateAbortMode(state);
+  ValidateGoetzMode(state);
+  ValidateRedoFraction(state);
+  ValidateRedoLength(state);
 
 }
 

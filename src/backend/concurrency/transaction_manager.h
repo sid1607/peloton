@@ -139,6 +139,7 @@ class TransactionManager {
     for(std::size_t txn_id_itr = 0; txn_id_itr < txn_id_count ; txn_id_itr++){
       long_running_txn_ids_.push_back(0);
     }
+    LOG_TRACE("LRT Size: %lu", long_running_txn_ids_.size());
   }
 
  protected:
