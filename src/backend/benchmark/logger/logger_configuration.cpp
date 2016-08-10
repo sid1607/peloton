@@ -43,7 +43,8 @@ void Usage(FILE* out) {
           "   -v --flush-mode        :  Flush mode \n"
           "   -w --commit-interval   :  Group commit interval \n"
           "   -y --benchmark-type    :  Benchmark type \n"
-          "   -x --replication-port  :  port for follower \n");
+          "   -x --replication-port  :  port for follower \n"
+          "   -q --long-running-txn  :  long running txn count \n");
 }
 
 static struct option opts[] = {
@@ -60,6 +61,7 @@ static struct option opts[] = {
     {"replication-port", optional_argument, NULL, 'x'},
     {"benchmark-type", optional_argument, NULL, 'y'},
     {"remote-endpoint", optional_argument, NULL, 'z'},
+    {"long-running-txn", optional_argument, NULL, 'q'},
     {NULL, 0, NULL, 0}};
 
 static void ValidateLoggingType(const configuration& state) {
