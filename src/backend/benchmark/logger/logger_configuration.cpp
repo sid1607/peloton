@@ -256,6 +256,10 @@ static void ValidateLogFileDir(configuration& state) {
   LOG_INFO("log_file_dir :: %s", state.log_file_dir.c_str());
 }
 
+static void ValidateLongRunningTxnCount(configuration& state){
+  LOG_INFO("long_running_txn_count :: %lu", state.long_running_txn_count);
+}
+
 void ParseArguments(int argc, char* argv[], configuration& state) {
   // Default Logger Values
   state.logging_type = LOGGING_TYPE_NVM_WAL;
@@ -273,6 +277,7 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
   state.remote_endpoint = nullptr;
   state.replication_mode = SYNC_REPLICATION;
   state.checkpoint_type = CHECKPOINT_TYPE_INVALID;
+  state.long_running_txn_count = 0;
 
   // Default YCSB Values
   ycsb::state.scale_factor = 1;
@@ -293,10 +298,10 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
   // Parse args
   while (1) {
     int idx = 0;
-    // logger - a:e:f:g:hl:n:p:v:w:y:
+    // logger - a:e:f:g:hl:n:p:v:w:y:q:
     // ycsb   - b:c:d:k:t:u:o:r:
     // tpcc   - b:d:k:t:
-    int c = getopt_long(argc, argv, "a:e:f:g:hil:n:p:v:w:y:b:c:d:k:u:t:o:r:x:z:",
+    int c = getopt_long(argc, argv, "a:e:f:g:hil:n:p:v:w:y:b:c:d:k:u:t:o:r:x:z:q:",
                         opts, &idx);
 
     if (c == -1) break;
@@ -355,6 +360,9 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
         break;
       case 'y':
         state.benchmark_type = (BenchmarkType)atoi(optarg);
+        break;
+      case 'q':
+        state.long_running_txn_count = atol(optarg);
         break;
 
       // YCSB
@@ -420,6 +428,7 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
   ValidateFlushMode(state);
   ValidateNVMLatency(state);
   ValidatePCOMMITLatency(state);
+  ValidateLongRunningTxnCount(state);
 
   // Print YCSB configuration
   if (state.benchmark_type == BENCHMARK_TYPE_YCSB) {

@@ -492,6 +492,8 @@ bool RunInsert(UNUSED_ATTRIBUTE ZipfDistribution &zipf,
 
   ExecuteTest(executors);
 
+  // ABORT MODE
+  /*
   if(state.abort_mode == true) {
     txn_manager.AbortTransaction();
     return true;
@@ -500,9 +502,10 @@ bool RunInsert(UNUSED_ATTRIBUTE ZipfDistribution &zipf,
     txn_manager.CommitTransaction();
     return true;
   }
+  */
 
-  //auto txn_status = EndTransaction(txn);
-  //return txn_status;
+  auto txn_status = EndTransaction(txn);
+  return txn_status;
 }
 
 }  // namespace ycsb

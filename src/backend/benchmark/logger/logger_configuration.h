@@ -90,6 +90,9 @@ class configuration {
 
   // asynchronous_mode
   AsynchronousType asynchronous_mode;
+
+  // Long running txn id count
+  std::size_t long_running_txn_count;
 };
 
 void Usage(FILE *out);

@@ -20,6 +20,7 @@
 #include "backend/benchmark/tpcc/tpcc_configuration.h"
 #include "backend/networking/rpc_server.h"
 #include "backend/logging/logging_service.h"
+#include "backend/concurrency/transaction_manager_factory.h"
 
 // Logging mode
 extern LoggingType peloton_logging_mode;
@@ -62,6 +63,10 @@ void RunBenchmark() {
   peloton_wait_timeout = state.wait_timeout;
   peloton_flush_mode = state.flush_mode;
   peloton_pcommit_latency = state.pcommit_latency;
+
+  // LONG RUNNING TXNS
+  auto& txn_manager = concurrency::TransactionManagerFactory::GetInstance();
+  txn_manager.SetLongRunningTxnIds(state.long_running_txn_count);
 
   //===--------------------------------------------------------------------===//
   // WAL

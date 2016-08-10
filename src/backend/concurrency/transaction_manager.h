@@ -135,21 +135,43 @@ class TransactionManager {
 	  this->dirty_range_ = dirty_range;
   }
 
- protected:
+  void SetLongRunningTxnIds(std::size_t txn_id_count){
+    for(std::size_t txn_id_itr = 0; txn_id_itr < txn_id_count ; txn_id_itr++){
+      long_running_txn_ids_.push_back(0);
+    }
+  }
 
+ protected:
 
   inline bool CidIsInDirtyRange(cid_t cid){
 	  return ((cid > dirty_range_.first) & (cid <= dirty_range_.second));
   }
+
+  inline bool CidIsFromLongRunningTxn(cid_t cid){
+    bool status = false;
+    for(auto txn_id : long_running_txn_ids_){
+      if(cid == txn_id){
+        status = true;
+      }
+    }
+
+    return status;
+  }
+
   // invisible range after failure and recovery;
   // first value is exclusive, last value is inclusive
   std::pair<cid_t, cid_t> dirty_range_ = std::make_pair(INVALID_CID, INVALID_CID);
+
+  // REDUNDANT VISIBILITY CHECKS
 
 
  private:
   std::atomic<txn_id_t> next_txn_id_;
   std::atomic<cid_t> next_cid_;
   std::atomic<cid_t> maximum_grant_cid_;
+
+
+  std::vector<txn_id_t> long_running_txn_ids_;
 
 };
 }  // End storage namespace
