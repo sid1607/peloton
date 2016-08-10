@@ -132,6 +132,12 @@ bool OptimisticTxnManager::PerformInsert(const ItemPointer &location) {
   auto tile_group_header = manager.GetTileGroup(tile_group_id)->GetHeader();
   auto transaction_id = current_txn->GetTransactionId();
 
+  // TODO: Mimic reads
+  if (CidIsFromLongRunningTxn(tuple_id)) {
+    // the tuple is not available.
+    return false;
+  }
+
   // Set MVCC info
   //  PL_ASSERT(tile_group_header->GetTransactionId(tuple_id) ==
   //  INVALID_TXN_ID);
