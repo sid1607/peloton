@@ -557,7 +557,7 @@ int peloton_flush_mode;
 // pcommit latency (for NVM WBL)
 int peloton_pcommit_latency;
 
-// Ratio of tile groups on NVM
+// Ratio of tile groups on SSD
 double peloton_hybrid_storage_ratio;
 
 /*

@@ -360,9 +360,13 @@ StorageManager::StorageManager()
   switch (peloton_logging_mode) {
     // Check for NVM FS for data
     case LOGGING_TYPE_NVM_WBL: {
-      int status = stat(NVM_DIR, &data_stat);
+      // TODO: Use SSD for hybrid storage hierarchy
+      // int status = stat(NVM_DIR, &data_stat);
+      //data_file_name = std::string(NVM_DIR) + std::string(DATA_FILE_NAME);
+
+      int status = stat(SSD_DIR, &data_stat);
       if (status == 0 && S_ISDIR(data_stat.st_mode)) {
-        data_file_name = std::string(NVM_DIR) + std::string(DATA_FILE_NAME);
+        data_file_name = std::string(SSD_DIR) + std::string(DATA_FILE_NAME);
         found_file_system = true;
       }
 

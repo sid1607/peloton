@@ -487,13 +487,7 @@ void BuildLog() {
 
     ycsb::LoadYCSBDatabase();
 
-    // Reset after loading
-    if(state.hybrid_storage_ratio != 0){
-      peloton_hybrid_storage_ratio = 1;
-    }
-
     ycsb::RunWorkload();
-
 
   } else if (state.benchmark_type == BENCHMARK_TYPE_TPCC) {
     tpcc::CreateTPCCDatabase();

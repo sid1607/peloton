@@ -94,7 +94,7 @@ class configuration {
   // Long running txn id count
   std::size_t long_running_txn_count;
 
-  // Hybrid storage ratio
+  // Hybrid storage ratio (on SSD)
   double hybrid_storage_ratio;
 };
 
