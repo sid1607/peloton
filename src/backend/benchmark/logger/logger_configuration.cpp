@@ -283,7 +283,7 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
   state.data_file_size = 512;
 
   state.experiment_type = EXPERIMENT_TYPE_THROUGHPUT;
-  state.wait_timeout = 200;
+  state.wait_timeout = 10;
   state.benchmark_type = BENCHMARK_TYPE_YCSB;
   state.flush_mode = 2;
   state.nvm_latency = 0;
@@ -299,7 +299,7 @@ void ParseArguments(int argc, char* argv[], configuration& state) {
   // Default YCSB Values
   ycsb::state.scale_factor = 1;
   ycsb::state.duration = 1000;
-  ycsb::state.column_count = 10;
+  ycsb::state.column_count = 1;
   ycsb::state.update_ratio = 0.5;
   ycsb::state.backend_count = 2;
   ycsb::state.transaction_count = 0;
