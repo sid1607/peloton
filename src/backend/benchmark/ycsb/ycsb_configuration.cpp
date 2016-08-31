@@ -146,7 +146,7 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   // Default Values
   state.scale_factor = 1;
   state.duration = 1000;
-  state.column_count = 10;
+  state.column_count = 1;
   state.update_ratio = 0.5;
   state.backend_count = 2;
   state.transaction_count = 0;

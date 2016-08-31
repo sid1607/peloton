@@ -138,7 +138,6 @@ void LoadYCSBDatabase() {
   auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
   const bool allocate = true;
   auto txn = txn_manager.BeginTransaction();
-  std::unique_ptr<VarlenPool> pool(new VarlenPool(BACKEND_TYPE_MM));
   std::unique_ptr<executor::ExecutorContext> context(
       new executor::ExecutorContext(txn));
 
@@ -147,11 +146,9 @@ void LoadYCSBDatabase() {
 
     std::unique_ptr<storage::Tuple> tuple(new storage::Tuple(table_schema, allocate));
     auto key_value = ValueFactory::GetIntegerValue(rowid);
-    auto field_value = ValueFactory::GetStringValue(field_raw_value);
 
-    tuple->SetValue(0, key_value, nullptr);
-    for (oid_t col_itr = 1; col_itr < col_count; col_itr++) {
-      tuple->SetValue(col_itr, field_value, pool.get());
+    for (oid_t col_itr = 0; col_itr < col_count; col_itr++) {
+      tuple->SetValue(col_itr, key_value, nullptr);
     }
 
     planner::InsertPlan node(user_table, std::move(tuple));
