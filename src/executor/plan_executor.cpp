@@ -140,7 +140,10 @@ peloton_status PlanExecutor::ExchangeOperator(const planner::AbstractPlan *plan,
   if(plan->GetPlanNodeType() == PlanNodeType::PLAN_NODE_TYPE_SEQSCAN) {
     // provide intra-query parallelism for sequential scans
     num_executor_threads = std::thread::hardware_concurrency();
-    //    num_executor_threads = 2;
+    //    num_executor_threads = 1;
+    LOG_INFO("Running sequential scan with %d executor threads\n",
+             num_executor_threads);
+
   }
 
   auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
