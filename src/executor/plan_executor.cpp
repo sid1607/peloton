@@ -13,12 +13,14 @@
 #include <vector>
 
 #include "common/logger.h"
+#include "common/thread_pool.h"
 #include "concurrency/transaction_manager_factory.h"
 #include "executor/executor_context.h"
 #include "executor/executors.h"
 #include "executor/plan_executor.h"
 #include "optimizer/util.h"
 #include "storage/tuple_iterator.h"
+#include <include/common/init.h>
 
 namespace peloton {
 namespace bridge {
@@ -35,45 +37,14 @@ executor::AbstractExecutor *BuildExecutorTree(
 
 void CleanExecutorTree(executor::AbstractExecutor *root);
 
-/**
- * @brief Build a executor tree and execute it.
- * Use std::vector<common::Value *> as params to make it more elegant for
- * networking
- * Before ExecutePlan, a node first receives value list, so we should pass
- * value list directly rather than passing Postgres's ParamListInfo
- * @return status of execution.
- */
-void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
-  peloton_status p_status;
-  ExchangeParams *exchg_params = *exchg_params_arg;
-
-  if (exchg_params->plan == nullptr) {
-    exchg_params->p.set_value(p_status);
-    return;
-  }
-
-  LOG_TRACE("PlanExecutor Start ");
-
+void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_args) {
   bool status;
-  bool init_failure = false;
-  bool single_statement_txn = false;
-
-  auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
-  // auto txn = peloton::concurrency::current_txn;
-  // This happens for single statement queries in PG
-  // if (txn == nullptr) {
-  single_statement_txn = true;
-  auto txn = txn_manager.BeginTransaction();
-  // }
-  PL_ASSERT(txn);
-
-  LOG_TRACE("Txn ID = %lu ", txn->GetTransactionId());
-  LOG_TRACE("Building the executor tree");
-
+  peloton_status p_status;
+  ExchangeParams *exchg_params = *exchg_params_args;
   // Use const std::vector<common::Value *> &params to make it more elegant for
   // network
   std::unique_ptr<executor::ExecutorContext> executor_context(
-      BuildExecutorContext(exchg_params->params, txn));
+      BuildExecutorContext(exchg_params->params, exchg_params->txn));
 
   // Build the executor tree
   std::unique_ptr<executor::AbstractExecutor> executor_tree(
@@ -89,57 +60,121 @@ void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
 
   // Abort and cleanup
   if (status == false) {
-    init_failure = true;
-    txn->SetResult(Result::RESULT_FAILURE);
-    goto cleanup;
-  }
+    exchg_params->init_failure = true;
+    exchg_params->txn->SetResult(Result::RESULT_FAILURE);
+  } else {
 
-  LOG_TRACE("Running the executor tree");
-  exchg_params->result.clear();
+    LOG_TRACE("Running the executor tree");
+    exchg_params->result.clear();
 
-  // Execute the tree until we get result tiles from root node
-  while (status == true) {
-    status = executor_tree->Execute();
+    // Execute the tree until we get result tiles from root node
+    while (status == true) {
+      status = executor_tree->Execute();
 
-    std::unique_ptr<executor::LogicalTile> logical_tile(
-        executor_tree->GetOutput());
-    // Some executors don't return logical tiles (e.g., Update).
-    if (logical_tile.get() != nullptr) {
-      LOG_TRACE("Final Answer: %s",
-                logical_tile->GetInfo().c_str());  // Printing the answers
-      std::unique_ptr<catalog::Schema> output_schema(
-          logical_tile->GetPhysicalSchema());  // Physical schema of the tile
-      std::vector<std::vector<std::string>> answer_tuples;
-      answer_tuples =
-          std::move(logical_tile->GetAllValuesAsStrings(exchg_params->result_format));
+      std::unique_ptr<executor::LogicalTile> logical_tile(
+          executor_tree->GetOutput());
+      // Some executors don't return logical tiles (e.g., Update).
+      if (logical_tile.get() != nullptr) {
+        LOG_TRACE("Final Answer: %s",
+                  logical_tile->GetInfo().c_str());  // Printing the answers
+        std::unique_ptr<catalog::Schema> output_schema(
+            logical_tile->GetPhysicalSchema());  // Physical schema of the tile
+        std::vector<std::vector<std::string>> answer_tuples;
+        answer_tuples =
+            std::move(logical_tile->GetAllValuesAsStrings(exchg_params->result_format));
 
-      // Construct the returned results
-      for (auto tuple : answer_tuples) {
-        unsigned int col_index = 0;
-        for (auto column : output_schema->GetColumns()) {
-          auto column_name = column.GetName();
-          auto res = ResultType();
-          PlanExecutor::copyFromTo(column_name, res.first);
-          LOG_TRACE("column name: %s", column_name.c_str());
-          PlanExecutor::copyFromTo(tuple[col_index++], res.second);
-          if (tuple[col_index - 1].c_str() != nullptr) {
-            LOG_TRACE("column content: %s", tuple[col_index - 1].c_str());
+        // Construct the returned results
+        for (auto tuple : answer_tuples) {
+          unsigned int col_index = 0;
+          for (auto column : output_schema->GetColumns()) {
+            auto column_name = column.GetName();
+            auto res = ResultType();
+            PlanExecutor::copyFromTo(column_name, res.first);
+            LOG_TRACE("column name: %s", column_name.c_str());
+            PlanExecutor::copyFromTo(tuple[col_index++], res.second);
+            if (tuple[col_index - 1].c_str() != nullptr) {
+              LOG_TRACE("column content: %s", tuple[col_index - 1].c_str());
+            }
+            exchg_params->result.push_back(res);
           }
-          exchg_params->result.push_back(res);
         }
       }
     }
+    // Set the result
+    p_status.m_processed = executor_context->num_processed;
+    p_status.m_result_slots = nullptr;
   }
-
-  // Set the result
-  p_status.m_processed = executor_context->num_processed;
-  p_status.m_result_slots = nullptr;
-
-// final cleanup
-cleanup:
 
   LOG_TRACE("About to commit: single stmt: %d, init_failure: %d, status: %d",
             single_statement_txn, init_failure, txn->GetResult());
+
+  // clean up executor tree
+  CleanExecutorTree(executor_tree.get());
+  exchg_params->p.set_value(p_status);
+}
+/**
+ * @brief Build a executor tree and execute it.
+ * Use std::vector<common::Value *> as params to make it more elegant for
+ * networking
+ * Before ExecutePlan, a node first receives value list, so we should pass
+ * value list directly rather than passing Postgres's ParamListInfo
+ * @return status of execution.
+ */
+peloton_status PlanExecutor::ExchangeOperator(const planner::AbstractPlan *plan,
+                               const std::vector<common::Value *> &params,
+                               std::vector<ResultType> &result,
+                               const std::vector<int> &result_format) {
+  std::vector<std::shared_ptr<bridge::ExchangeParams>> exchg_params_list;
+  int num_executor_threads = 1;
+  bridge::peloton_status final_status;
+  bool single_statement_txn = true;
+  bool init_failure = false;
+  final_status.m_processed = 0;
+
+  if (plan == nullptr) {
+    return final_status;
+  }
+
+  LOG_TRACE("PlanExecutor Start ");
+
+  if(plan->GetPlanNodeType() == PlanNodeType::PLAN_NODE_TYPE_SEQSCAN) {
+    // provide intra-query parallelism for sequential scans
+    num_executor_threads = std::thread::hardware_concurrency();
+    //    num_executor_threads = 2;
+  }
+
+  auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
+  concurrency::Transaction* txn = txn_manager.BeginTransaction();
+  PL_ASSERT(txn);
+
+  LOG_TRACE("Txn ID = %lu ", txn->GetTransactionId());
+  LOG_TRACE("Building the executor tree");
+
+  for(int i=0; i<num_executor_threads; i++) {
+    // in first pass make the exch params list
+    std::shared_ptr<bridge::ExchangeParams> exchg_params(
+        new bridge::ExchangeParams(txn, plan, params, num_executor_threads, i,
+                                   result_format));
+    exchg_params->self = exchg_params.get();
+    exchg_params_list.push_back(exchg_params);
+
+    executor_thread_pool.SubmitTask(PlanExecutor::ExecutePlanLocal,
+                                    &exchg_params->self);
+  }
+
+  for(int i=0; i<num_executor_threads; i++) {
+    // wait for executor thread to return result
+    auto temp_status = exchg_params_list[i]->f.get();
+    final_status.m_processed += temp_status.m_processed;
+
+    // persist failure states across iterations
+    if (exchg_params_list[i]->init_failure == true)
+      init_failure = true;
+    final_status.m_result_slots = nullptr;
+
+    result.insert(result.end(), exchg_params_list[i]->result.begin(),
+                  exchg_params_list[i]->result.end());
+  }
 
   // should we commit or abort ?
   if (single_statement_txn == true || init_failure == true) {
@@ -148,21 +183,18 @@ cleanup:
       case Result::RESULT_SUCCESS:
         // Commit
         LOG_TRACE("Commit Transaction");
-        p_status.m_result = txn_manager.CommitTransaction(txn);
+        final_status.m_result = txn_manager.CommitTransaction(txn);
         break;
 
       case Result::RESULT_FAILURE:
       default:
         // Abort
         LOG_TRACE("Abort Transaction");
-        p_status.m_result = txn_manager.AbortTransaction(txn);
+        final_status.m_result = txn_manager.AbortTransaction(txn);
     }
   }
 
-  // clean up executor tree
-  CleanExecutorTree(executor_tree.get());
-
-  exchg_params->p.set_value(p_status);
+  return final_status;
 }
 
 /**
@@ -174,17 +206,17 @@ cleanup:
  * @return number of executed tuples and logical_tile_list
  */
 
-void PlanExecutor::ExecutePlanRemote(
+void PlanExecutor::ExecutePlan(
     const planner::AbstractPlan *plan, const std::vector<common::Value *> &params,
     std::vector<std::unique_ptr<executor::LogicalTile>> &logical_tile_list,
     boost::promise<int> &p) {
-  if (plan == nullptr) return p.set_value(-1);
-
-  LOG_TRACE("PlanExecutor Start ");
 
   bool status;
   bool init_failure = false;
-  bool single_statement_txn = false;
+  bool single_statement_txn = true;
+  if (plan == nullptr) return p.set_value(-1);
+
+  LOG_TRACE("PlanExecutor Start ");
 
   auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
   // auto txn = peloton::concurrency::current_txn;

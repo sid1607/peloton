@@ -16,6 +16,7 @@
 #include "common/types.h"
 #include "executor/abstract_executor.h"
 #include "boost/thread/future.hpp"
+#include "concurrency/transaction_manager_factory.h"
 
 
 namespace peloton {
@@ -53,20 +54,22 @@ struct ExchangeParams {
   boost::promise<bridge::peloton_status> p;
   boost::unique_future<bridge::peloton_status> f;
   std::vector<ResultType> result;
+  concurrency::Transaction *txn;
   const planner::AbstractPlan *plan;
   const std::vector<common::Value *> params;
   int parallelism_count, partition_id;
   const std::vector<int> result_format;
+  bool init_failure;
   ExchangeParams *self;
 
-  inline ExchangeParams(const planner::AbstractPlan *plan,
+  inline ExchangeParams(concurrency::Transaction* txn,
+                        const planner::AbstractPlan *plan,
                         const std::vector<common::Value *>& params,
                         int parallelism_count, int partition_id,
                         const std::vector<int> &result_format)
-      : plan(plan), params(params),
-        parallelism_count(parallelism_count),
-        partition_id(partition_id),
-        result_format(result_format) {
+      : txn(txn), plan(plan), params(params),
+        parallelism_count(parallelism_count), partition_id(partition_id),
+        result_format(result_format), init_failure(false) {
     f = p.get_future();
   }
 };
@@ -103,6 +106,21 @@ class PlanExecutor {
   */
 
   /*
+   * @brief Based on the Volcano 'Exchange' intra-query parallelism model.
+   * Currently supported only for sequential scans. This operator spawns
+   * multiple execution trees (tasks), each deployed on a different executor
+   * thread. For now, the operator spawns as many tasks as there are cores
+   * in the system. The tiles to be processed are divided into modulo
+   * partitions such that each thread gets roughly the same amount of work.
+   * The intermediate results from each thread are coalesced to give the
+   * final output.
+   */
+  static peloton_status ExchangeOperator(const planner::AbstractPlan *plan,
+                               const std::vector<common::Value *> &params,
+                               std::vector<ResultType> &result,
+                               const std::vector<int> &result_format);
+
+  /*
    * @brief Use std::vector<common::Value *> as params to make it more elegant
    * for
    * networking
@@ -112,7 +130,7 @@ class PlanExecutor {
    * Also pass parallelism details if we are doing intra-query parallelism
    *
    */
-  static void ExecutePlanLocal(ExchangeParams **exchg_params_arg);
+  static void ExecutePlanLocal(ExchangeParams **exchg_params_args);
 
   /*
    * @brief When a peloton node recvs a query plan in rpc mode,
@@ -120,8 +138,9 @@ class PlanExecutor {
    * @param plan and params
    * @return the number of tuple it executes and logical_tile_list
    */
-  static void ExecutePlanRemote(
-      const planner::AbstractPlan *plan, const std::vector<common::Value *> &params,
+  static void ExecutePlan(
+      const planner::AbstractPlan *plan,
+      const std::vector<common::Value *> &params,
       std::vector<std::unique_ptr<executor::LogicalTile>> &logical_tile_list,
       boost::promise<int> &p);
 };
