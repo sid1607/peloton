@@ -19,6 +19,7 @@
 #include "executor/plan_executor.h"
 #include "optimizer/util.h"
 #include "storage/tuple_iterator.h"
+#include <sched.h>
 
 namespace peloton {
 namespace bridge {
@@ -47,6 +48,8 @@ void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
   peloton_status p_status;
   ExchangeParams *exchg_params = *exchg_params_arg;
 
+  // check if threads are properly getting pinned
+  LOG_DEBUG("CPUID:%d, PID:%d\n", sched_getcpu(), exchg_params->partition_id);
   if (exchg_params->plan == nullptr) {
     exchg_params->p.set_value(p_status);
     return;

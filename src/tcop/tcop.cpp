@@ -121,7 +121,7 @@ bridge::peloton_status TrafficCop::ExchangeOperator(
   if(plan != nullptr && plan->GetPlanNodeType() ==
                             PlanNodeType::PLAN_NODE_TYPE_SEQSCAN) {
     // provide intra-query parallelism for sequential scans
-    num_executor_threads = std::thread::hardware_concurrency();
+    num_executor_threads = std::thread::hardware_concurrency()/2;
   }
 
   for(int i=0; i<num_executor_threads; i++) {

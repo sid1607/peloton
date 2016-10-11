@@ -34,15 +34,21 @@ void PelotonInit::Initialize() {
   // Initialize CDS library
   cds::Initialize();
 
+  int num_hardware_threads_per_pool
+      = std::thread::hardware_concurrency()/2;
+
+  // Divide threads half and half between frontend and executor
+
   // FIXME: A number for the available threads other than
   // std::thread::hardware_concurrency() should be
   // chosen. Assigning new task after reaching maximum will
   // block.
-  thread_pool.Initialize(std::thread::hardware_concurrency(), 0);
+  thread_pool.Initialize(num_hardware_threads_per_pool, 0, 0);
 
   // FIXME: Find a way to balance client threads with execution
   // threads. Too many active clients might starve execution.
-  executor_thread_pool.Initialize(std::thread::hardware_concurrency(), 0);
+  executor_thread_pool.Initialize(num_hardware_threads_per_pool, 0,
+                                  num_hardware_threads_per_pool);
 
   // the garbage collector is assigned to dedicated threads.
   auto &gc_manager = gc::GCManagerFactory::GetInstance();

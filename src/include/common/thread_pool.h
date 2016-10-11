@@ -33,16 +33,23 @@ class ThreadPool {
 
   ~ThreadPool() { }
 
-  void Initialize(const size_t &pool_size, const size_t &dedicated_thread_count) {
+  void Initialize(const size_t &pool_size, const size_t &dedicated_thread_count,
+        int cpu_offset) {
+    cpu_set_t cpuset;
     pool_size_ = pool_size;
     PL_ASSERT(pool_size_ != 0);
 
     dedicated_thread_count_ = dedicated_thread_count;
 
     for (size_t i = 0; i < pool_size_; ++i) {
+      // TODO: Pin different pools on different cores?
       // add thread to thread pool.
-      thread_pool_.create_thread(
+      auto new_thread = thread_pool_.create_thread(
           boost::bind(&boost::asio::io_service::run, &io_service_));
+      auto nt_handle = new_thread->native_handle();
+      CPU_ZERO(&cpuset);
+      CPU_SET(((i+1)%pool_size)+cpu_offset, &cpuset);
+      pthread_setaffinity_np(nt_handle, sizeof(cpu_set_t), &cpuset);
     }
 
     dedicated_threads_.resize(dedicated_thread_count_);
