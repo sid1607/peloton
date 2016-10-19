@@ -351,6 +351,8 @@ TEST_F(StatsTest, PerThreadStatsTest) {
 
 TEST_F(StatsTest, PerQueryStatsTest) {
   int64_t aggregate_interval = 1000;
+  // start executor pool
+  ExecutorPoolHarness::GetInstance();
   LaunchAggregator(aggregate_interval);
   auto &aggregator = stats::StatsAggregator::GetInstance();
 

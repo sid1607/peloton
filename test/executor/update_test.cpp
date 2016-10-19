@@ -39,7 +39,10 @@ namespace test {
 
 class UpdateTests : public PelotonTest {};
 
+
 TEST_F(UpdateTests, Updating) {
+  ExecutorPoolHarness::GetInstance();
+
   LOG_INFO("Bootstrapping...");
   auto catalog = catalog::Catalog::GetInstance();
   catalog->CreateDatabase(DEFAULT_DB_NAME, nullptr);
@@ -127,6 +130,7 @@ TEST_F(UpdateTests, Updating) {
   LOG_INFO("Building plan tree completed!");
   bridge::PlanExecutor::PrintPlan(statement->GetPlanTree().get(), "Plan");
   LOG_INFO("Executing plan...");
+
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
   status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),

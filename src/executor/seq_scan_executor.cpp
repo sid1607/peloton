@@ -111,8 +111,6 @@ bool SeqScanExecutor::DExecute() {
   }
   // Scanning a table
   else if (children_.size() == 0) {
-    // support intra-query parallelism, be parallelism count aware
-
     LOG_TRACE("Seq Scan executor :: 0 child ");
 
     PL_ASSERT(target_table_ != nullptr);

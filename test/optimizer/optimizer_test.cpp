@@ -30,6 +30,8 @@ class OptimizerTests : public PelotonTest {};
 // Test whether update stament will use index scan plan
 // TODO: Split the tests into separate test cases.
 TEST_F(OptimizerTests, UpdateDelWithIndexScanTest) {
+  // start executor pool
+  ExecutorPoolHarness::GetInstance();
   LOG_INFO("Bootstrapping...");
   catalog::Catalog::GetInstance()->CreateDatabase(DEFAULT_DB_NAME, nullptr);
   LOG_INFO("Bootstrapping completed!");

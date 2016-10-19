@@ -39,6 +39,8 @@ namespace test {
 class CreateIndexTests : public PelotonTest {};
 
 TEST_F(CreateIndexTests, CreatingIndex) {
+  // start executor pool
+  ExecutorPoolHarness::GetInstance();
   LOG_INFO("Bootstrapping...");
   catalog::Catalog::GetInstance()->CreateDatabase(DEFAULT_DB_NAME, nullptr);
   LOG_INFO("Bootstrapping completed!");

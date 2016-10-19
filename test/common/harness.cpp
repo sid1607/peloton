@@ -32,13 +32,6 @@ TestingHarness::TestingHarness()
       tile_group_id_counter(START_OID),
       pool_(new common::VarlenPool(BACKEND_TYPE_MM)) {
 
-  // Start the executor thread pool
-  executor_thread_pool.Initialize(std::thread::hardware_concurrency(), 0);
-}
-
-TestingHarness::~TestingHarness() {
-  // Shutdown the executor thread pool
-  executor_thread_pool.Shutdown();
 }
 
 uint64_t TestingHarness::GetThreadId() {
@@ -66,6 +59,20 @@ common::VarlenPool* TestingHarness::GetTestingPool() {
 
 oid_t TestingHarness::GetNextTileGroupId() { return ++tile_group_id_counter; }
 
+ExecutorPoolHarness& ExecutorPoolHarness::GetInstance() {
+  static ExecutorPoolHarness execHarness;
+  return execHarness;
+}
+
+ExecutorPoolHarness::ExecutorPoolHarness() {
+  // Start the executor thread pool
+  executor_thread_pool.Initialize(std::thread::hardware_concurrency(), 0);
+}
+
+ExecutorPoolHarness::~ExecutorPoolHarness() {
+  // Shutdown the executor thread pool
+  executor_thread_pool.Shutdown();
+}
 
 
 }  // End test namespace

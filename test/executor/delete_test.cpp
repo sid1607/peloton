@@ -61,6 +61,8 @@ void ShowTable(std::string database_name, std::string table_name) {
 }
 
 TEST_F(DeleteTests, VariousOperations) {
+  // start executor pool
+  ExecutorPoolHarness::GetInstance();
   LOG_INFO("Bootstrapping...");
   catalog::Catalog::GetInstance()->CreateDatabase(DEFAULT_DB_NAME, nullptr);
   LOG_INFO("Bootstrapping completed!");

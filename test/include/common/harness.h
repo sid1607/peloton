@@ -74,8 +74,6 @@ class TestingHarness {
  private:
   TestingHarness();
 
-  ~TestingHarness();
-
   // Txn id counter
   std::atomic<txn_id_t> txn_id_counter;
 
@@ -87,6 +85,21 @@ class TestingHarness {
 
   // Testing pool
   std::unique_ptr<common::VarlenPool> pool_;
+};
+
+// harness that is used to create a new instance of the executor pool
+class ExecutorPoolHarness {
+  public:
+    ExecutorPoolHarness(const ExecutorPoolHarness &) = delete;
+    ExecutorPoolHarness &operator=(const ExecutorPoolHarness &) = delete;
+    ExecutorPoolHarness(ExecutorPoolHarness &&) = delete;
+    ExecutorPoolHarness &operator=(ExecutorPoolHarness &&) = delete;
+
+    static ExecutorPoolHarness &GetInstance(void);
+  private:
+    ExecutorPoolHarness();
+
+    ~ExecutorPoolHarness();
 };
 
 template <typename... Args>

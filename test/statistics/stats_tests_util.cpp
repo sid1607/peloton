@@ -30,6 +30,8 @@ namespace test {
 
 void StatsTestsUtil::ShowTable(std::string database_name,
                                std::string table_name) {
+  // start executor pool
+  ExecutorPoolHarness::GetInstance();
   catalog::Catalog::GetInstance()->GetTableWithName(database_name, table_name);
   std::unique_ptr<Statement> statement;
   auto &peloton_parser = parser::Parser::GetInstance();
