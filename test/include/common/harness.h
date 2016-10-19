@@ -32,6 +32,8 @@
 
 #include <google/protobuf/stubs/common.h>
 #include <gflags/gflags.h>
+#include <include/common/thread_pool.h>
+
 
 namespace peloton {
 
@@ -40,6 +42,7 @@ class VarlenPool;
 }
 
 namespace test {
+
 
 //===--------------------------------------------------------------------===//
 // Test Harness (common routines)
@@ -70,6 +73,8 @@ class TestingHarness {
 
  private:
   TestingHarness();
+
+  ~TestingHarness();
 
   // Txn id counter
   std::atomic<txn_id_t> txn_id_counter;
@@ -108,6 +113,7 @@ class PelotonTest : public ::testing::Test {
  protected:
 
   virtual void SetUp() {
+
     // Initialize CDS library
     cds::Initialize();
 
@@ -116,6 +122,7 @@ class PelotonTest : public ::testing::Test {
   }
 
   virtual void TearDown() {
+
     // Detach thread from cds
     cds::threading::Manager::detachThread();
 

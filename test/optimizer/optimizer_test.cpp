@@ -7,7 +7,6 @@
 #include "common/statement.h"
 #include "executor/create_executor.h"
 #include "executor/insert_executor.h"
-#include "executor/plan_executor.h"
 #include "optimizer/optimizer.h"
 #include "optimizer/simple_optimizer.h"
 #include "parser/parser.h"
@@ -15,6 +14,7 @@
 #include "planner/delete_plan.h"
 #include "planner/insert_plan.h"
 #include "planner/update_plan.h"
+#include "tcop/tcop.h"
 
 namespace peloton {
 namespace test {
@@ -63,7 +63,7 @@ TEST_F(OptimizerTests, UpdateDelWithIndexScanTest) {
   std::vector<int> result_format;
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
-  bridge::peloton_status status = bridge::PlanExecutor::ExecutePlan(
+  bridge::peloton_status status =tcop::TrafficCop::ExchangeOperator(
       statement->GetPlanTree().get(), params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Table Created");
@@ -94,7 +94,7 @@ TEST_F(OptimizerTests, UpdateDelWithIndexScanTest) {
 
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
-  status = bridge::PlanExecutor::ExecutePlan(statement->GetPlanTree().get(),
+  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
                                              params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple inserted!");
@@ -115,7 +115,7 @@ TEST_F(OptimizerTests, UpdateDelWithIndexScanTest) {
 
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
-  status = bridge::PlanExecutor::ExecutePlan(statement->GetPlanTree().get(),
+  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
                                              params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("INDEX CREATED!");

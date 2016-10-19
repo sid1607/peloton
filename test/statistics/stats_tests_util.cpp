@@ -23,6 +23,7 @@
 #include "planner/delete_plan.h"
 #include "planner/insert_plan.h"
 #include "storage/tile.h"
+#include "tcop/tcop.h"
 
 namespace peloton {
 namespace test {
@@ -41,7 +42,7 @@ void StatsTestsUtil::ShowTable(std::string database_name,
       optimizer::SimpleOptimizer::BuildPelotonPlanTree(select_stmt));
   bridge::PlanExecutor::PrintPlan(statement->GetPlanTree().get(), "Plan");
   std::vector<int> result_format(statement->GetTupleDescriptor().size(), 0);
-  bridge::PlanExecutor::ExecutePlan(statement->GetPlanTree().get(), params,
+  tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(), params,
                                     result, result_format);
 }
 

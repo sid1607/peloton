@@ -19,7 +19,6 @@
 #include "executor/create_executor.h"
 #include "executor/delete_executor.h"
 #include "executor/insert_executor.h"
-#include "executor/plan_executor.h"
 #include "optimizer/simple_optimizer.h"
 #include "parser/parser.h"
 #include "planner/create_plan.h"
@@ -57,7 +56,7 @@ void ShowTable(std::string database_name, std::string table_name) {
       tcop::TrafficCop::GetInstance().GenerateTupleDescriptor("SELECT * FROM " +
                                                               table->GetName());
   result_format = std::move(std::vector<int>(tuple_descriptor.size(), 0));
-  status = bridge::PlanExecutor::ExecutePlan(statement->GetPlanTree().get(),
+  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
                                              params, result, result_format);
 }
 
@@ -117,7 +116,7 @@ TEST_F(DeleteTests, VariousOperations) {
   LOG_INFO("Executing plan...");
   std::vector<int> result_format;
   result_format = std::move(std::vector<int>(0, 0));
-  bridge::peloton_status status = bridge::PlanExecutor::ExecutePlan(
+  bridge::peloton_status status = tcop::TrafficCop::ExchangeOperator(
       statement->GetPlanTree().get(), params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple inserted!");
@@ -141,7 +140,7 @@ TEST_F(DeleteTests, VariousOperations) {
   bridge::PlanExecutor::PrintPlan(statement->GetPlanTree().get(), "Plan");
   LOG_INFO("Executing plan...");
   result_format = std::move(std::vector<int>(0, 0));
-  status = bridge::PlanExecutor::ExecutePlan(statement->GetPlanTree().get(),
+  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
                                              params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple inserted!");
@@ -165,7 +164,7 @@ TEST_F(DeleteTests, VariousOperations) {
   bridge::PlanExecutor::PrintPlan(statement->GetPlanTree().get(), "Plan");
   LOG_INFO("Executing plan...");
   result_format = std::move(std::vector<int>(0, 0));
-  status = bridge::PlanExecutor::ExecutePlan(statement->GetPlanTree().get(),
+  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
                                              params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple inserted!");
@@ -190,7 +189,7 @@ TEST_F(DeleteTests, VariousOperations) {
       tcop::TrafficCop::GetInstance().GenerateTupleDescriptor(
           statement->GetQueryString());
   result_format = std::move(std::vector<int>(tuple_descriptor.size(), 0));
-  status = bridge::PlanExecutor::ExecutePlan(statement->GetPlanTree().get(),
+  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
                                              params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Counted Tuples!");
@@ -210,7 +209,7 @@ TEST_F(DeleteTests, VariousOperations) {
   bridge::PlanExecutor::PrintPlan(statement->GetPlanTree().get(), "Plan");
   LOG_INFO("Executing plan...");
   result_format = std::move(std::vector<int>(0, 0));
-  status = bridge::PlanExecutor::ExecutePlan(statement->GetPlanTree().get(),
+  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
                                              params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple deleted!");
@@ -232,7 +231,7 @@ TEST_F(DeleteTests, VariousOperations) {
   bridge::PlanExecutor::PrintPlan(statement->GetPlanTree().get(), "Plan");
   LOG_INFO("Executing plan...");
   result_format = std::move(std::vector<int>(0, 0));
-  status = bridge::PlanExecutor::ExecutePlan(statement->GetPlanTree().get(),
+  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
                                              params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple deleted!");
