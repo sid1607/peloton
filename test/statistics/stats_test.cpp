@@ -380,12 +380,12 @@ TEST_F(StatsTest, PerQueryStatsTest) {
   std::vector<ResultType> result;
   std::vector<int> result_format(statement->GetTupleDescriptor().size(), 0);
   bridge::peloton_status status = tcop::TrafficCop::ExchangeOperator(
-      statement->GetPlanTree().get(), params, result, result_format);
+      statement, params, result, result_format);
   LOG_DEBUG("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple inserted!");
 
   // Now Updating end-to-end
-  statement = std::move(StatsTestsUtil::GetUpdateStmt());
+  statement = StatsTestsUtil::GetUpdateStmt();
   // Initialize the query metric
   backend_context->InitQueryMetric(statement->GetQueryString(), DEFAULT_DB_ID);
 
@@ -394,13 +394,13 @@ TEST_F(StatsTest, PerQueryStatsTest) {
   result.clear();
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
-  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
-                                             params, result, result_format);
+  status = tcop::TrafficCop::ExchangeOperator(statement, params, result,
+                                              result_format);
   LOG_DEBUG("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple updated!");
 
   // Deleting end-to-end
-  statement = std::move(StatsTestsUtil::GetDeleteStmt());
+  statement = StatsTestsUtil::GetDeleteStmt();
   // Initialize the query metric
   backend_context->InitQueryMetric(statement->GetQueryString(), DEFAULT_DB_ID);
 
@@ -409,8 +409,8 @@ TEST_F(StatsTest, PerQueryStatsTest) {
   result.clear();
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
-  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
-                                             params, result, result_format);
+  status = tcop::TrafficCop::ExchangeOperator(statement, params, result,
+                                              result_format);
   LOG_DEBUG("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple deleted!");
 

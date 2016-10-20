@@ -53,16 +53,16 @@ struct ExchangeParams {
   boost::promise<bridge::peloton_status> p;
   boost::unique_future<bridge::peloton_status> f;
   std::vector<ResultType> result;
-  const planner::AbstractPlan *plan;
+  const std::shared_ptr<Statement> statement;
   const std::vector<common::Value *> params;
   int parallelism_count, partition_id;
   const std::vector<int> result_format;
   ExchangeParams *self;
 
-  inline ExchangeParams(const planner::AbstractPlan *plan,
+  inline ExchangeParams(const std::shared_ptr<Statement> &statement,
                         const std::vector<common::Value *>& params,
                         const std::vector<int> &result_format)
-      : plan(plan), params(params),
+      : statement(statement), params(params),
         result_format(result_format) {
     f = p.get_future();
   }

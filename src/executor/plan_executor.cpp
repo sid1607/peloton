@@ -47,7 +47,12 @@ void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
   peloton_status p_status;
   ExchangeParams *exchg_params = *exchg_params_arg;
 
-  if (exchg_params->plan == nullptr) {
+  if (FLAGS_stats_mode != STATS_TYPE_INVALID) {
+    stats::BackendStatsContext::GetInstance()->InitQueryMetric(
+        exchg_params->statement->GetQueryString(), DEFAULT_DB_ID);
+  }
+
+  if (exchg_params->statement->GetPlanTree().get() == nullptr) {
     exchg_params->p.set_value(p_status);
     return;
   }
@@ -77,7 +82,9 @@ void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
 
   // Build the executor tree
   std::unique_ptr<executor::AbstractExecutor> executor_tree(
-      BuildExecutorTree(nullptr, exchg_params->plan, executor_context.get()));
+      BuildExecutorTree(nullptr,
+                        exchg_params->statement->GetPlanTree().get(),
+                        executor_context.get()));
 
   LOG_TRACE("Initializing the executor tree");
 

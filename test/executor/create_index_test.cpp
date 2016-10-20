@@ -53,7 +53,7 @@ TEST_F(CreateIndexTests, CreatingIndex) {
   LOG_INFO(
       "Query: CREATE TABLE department_table(dept_id INT PRIMARY KEY,student_id "
       "INT, dept_name TEXT);");
-  std::unique_ptr<Statement> statement;
+  std::shared_ptr<Statement> statement;
   statement.reset(new Statement("CREATE",
                                 "CREATE TABLE department_table(dept_id INT "
                                 "PRIMARY KEY, student_id INT, dept_name "
@@ -80,7 +80,7 @@ TEST_F(CreateIndexTests, CreatingIndex) {
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
   bridge::peloton_status status = tcop::TrafficCop::ExchangeOperator(
-      statement->GetPlanTree().get(), params, result, result_format);
+      statement, params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Table Created");
   txn_manager.CommitTransaction(txn);
@@ -116,8 +116,8 @@ TEST_F(CreateIndexTests, CreatingIndex) {
   LOG_INFO("Executing plan...");
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
-  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
-                                             params, result, result_format);
+  status = tcop::TrafficCop::ExchangeOperator(statement, params, result,
+                                              result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple inserted!");
   txn_manager.CommitTransaction(txn);
@@ -143,8 +143,8 @@ TEST_F(CreateIndexTests, CreatingIndex) {
   LOG_INFO("Executing plan...");
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
-  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
-                                             params, result, result_format);
+  status = tcop::TrafficCop::ExchangeOperator(statement, params,
+                                              result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("INDEX CREATED!");
   txn_manager.CommitTransaction(txn);

@@ -63,7 +63,7 @@ class TrafficCop {
  * query executor pool and blocks the libevent thread till the equery executes
  */
   static bridge::peloton_status ExchangeOperator(
-      const planner::AbstractPlan *plan,
+      const std::shared_ptr<Statement> &statement,
       const std::vector<common::Value *> &params,
       std::vector<ResultType>& result, const std::vector<int> &result_format);
 

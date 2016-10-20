@@ -175,7 +175,7 @@ TEST_F(IndexScanTests, MultiColumnPredicateTest) {
 void ShowTable(std::string database_name, std::string table_name) {
   auto table = catalog::Catalog::GetInstance()->GetTableWithName(database_name,
                                                                  table_name);
-  std::unique_ptr<Statement> statement;
+  std::shared_ptr<Statement> statement;
   auto &peloton_parser = parser::Parser::GetInstance();
   bridge::peloton_status status;
   std::vector<common::Value *> params;
@@ -191,14 +191,14 @@ void ShowTable(std::string database_name, std::string table_name) {
       tcop::TrafficCop::GetInstance().GenerateTupleDescriptor(
           statement->GetQueryString());
   result_format = std::move(std::vector<int>(tuple_descriptor.size(), 0));
-  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
-                                             params, result, result_format);
+  status = tcop::TrafficCop::ExchangeOperator(statement, params, result,
+                                              result_format);
 }
 
 void ExecuteSQLQuery(const std::string statement_name,
                      const std::string query_string) {
   LOG_INFO("Query: %s", query_string.c_str());
-  static std::unique_ptr<Statement> statement;
+  static std::shared_ptr<Statement> statement;
   statement.reset(new Statement(statement_name, query_string));
   auto &peloton_parser = parser::Parser::GetInstance();
   LOG_INFO("Building parse tree...");
@@ -218,8 +218,7 @@ void ExecuteSQLQuery(const std::string statement_name,
           statement->GetQueryString());
   result_format = std::move(std::vector<int>(tuple_descriptor.size(), 0));
   UNUSED_ATTRIBUTE bridge::peloton_status status =
-  tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(), params,
-                                        result, result_format);
+  tcop::TrafficCop::ExchangeOperator(statement, params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   ShowTable(DEFAULT_DB_NAME, "department_table");
 }

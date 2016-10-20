@@ -84,7 +84,7 @@ TEST_F(UpdateTests, Updating) {
   LOG_INFO(
       "Query: INSERT INTO department_table(dept_id,manager_id,dept_name) "
       "VALUES (1,12,'hello_1');");
-  std::unique_ptr<Statement> statement;
+  std::shared_ptr<Statement> statement;
   statement.reset(new Statement("INSERT",
                                 "INSERT INTO "
                                 "department_table(dept_id,manager_id,dept_name)"
@@ -107,7 +107,7 @@ TEST_F(UpdateTests, Updating) {
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
   bridge::peloton_status status = tcop::TrafficCop::ExchangeOperator(
-      statement->GetPlanTree().get(), params, result, result_format);
+      statement, params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple inserted!");
   txn_manager.CommitTransaction(txn);
@@ -133,8 +133,8 @@ TEST_F(UpdateTests, Updating) {
 
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
-  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
-                                             params, result, result_format);
+  status = tcop::TrafficCop::ExchangeOperator(statement, params, result,
+                                              result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple Updated!");
   txn_manager.CommitTransaction(txn);
@@ -160,7 +160,7 @@ TEST_F(UpdateTests, Updating) {
   LOG_INFO("Executing plan...");
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
-  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
+  status = tcop::TrafficCop::ExchangeOperator(statement,
                                              params, result, result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple Updated!");
@@ -184,8 +184,8 @@ TEST_F(UpdateTests, Updating) {
   LOG_INFO("Executing plan...");
   result_format =
       std::move(std::vector<int>(statement->GetTupleDescriptor().size(), 0));
-  status = tcop::TrafficCop::ExchangeOperator(statement->GetPlanTree().get(),
-                                             params, result, result_format);
+  status = tcop::TrafficCop::ExchangeOperator(statement, params, result,
+                                              result_format);
   LOG_INFO("Statement executed. Result: %d", status.m_result);
   LOG_INFO("Tuple deleted!");
   txn_manager.CommitTransaction(txn);

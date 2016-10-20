@@ -87,11 +87,6 @@ Result TrafficCop::ExecuteStatement(
     std::vector<ResultType> &result, int &rows_changed,
     UNUSED_ATTRIBUTE std::string &error_message) {
 
-  if (FLAGS_stats_mode != STATS_TYPE_INVALID) {
-    stats::BackendStatsContext::GetInstance()->InitQueryMetric(
-        statement->GetQueryString(), DEFAULT_DB_ID);
-  }
-
   LOG_TRACE("Execute Statement of name: %s",
             statement->GetStatementName().c_str());
   LOG_TRACE("Execute Statement of query: %s",
@@ -100,8 +95,7 @@ Result TrafficCop::ExecuteStatement(
 
   try {
     bridge::PlanExecutor::PrintPlan(statement->GetPlanTree().get(), "Plan");
-    auto status = ExchangeOperator(statement->GetPlanTree().get(),
-                                   params, result, result_format);
+    auto status = ExchangeOperator(statement, params, result, result_format);
     LOG_TRACE("Statement executed. Result: %d", status.m_result);
     rows_changed = status.m_processed;
     return status.m_result;
@@ -112,7 +106,7 @@ Result TrafficCop::ExecuteStatement(
 }
 
 bridge::peloton_status TrafficCop::ExchangeOperator(
-    const planner::AbstractPlan *plan,
+    const std::shared_ptr<Statement> &statement,
     const std::vector<common::Value *> &params,
     std::vector<ResultType>& result, const std::vector<int> &result_format) {
 
@@ -120,7 +114,7 @@ bridge::peloton_status TrafficCop::ExchangeOperator(
 
   // make the exchg params list
   std::unique_ptr<bridge::ExchangeParams> exchg_params(
-      new bridge::ExchangeParams(plan, params, result_format));
+      new bridge::ExchangeParams(statement, params, result_format));
   exchg_params->self = exchg_params.get();
   executor_thread_pool.SubmitTask(bridge::PlanExecutor::ExecutePlanLocal,
                                   &exchg_params->self);

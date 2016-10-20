@@ -37,7 +37,7 @@ public class PelotonTest {
   public static final int POSTGRES = 1;
   public static final int TIMESTEN = 2;
 
-
+  public static final long NUMOPS = 1000*100;
 
   private final String DROP = "DROP TABLE IF EXISTS A;" +
           "DROP TABLE IF EXISTS B;";
@@ -164,10 +164,9 @@ public class PelotonTest {
   public void Nop_Test() throws Exception {
     long startTime = System.currentTimeMillis();
     long elapsedTime = 0L;
-    long numOps = 1000 * 1000;
     if (query_type == SEMICOLON) {
       Statement stmt = conn.createStatement();
-      for (long i = 0; i < numOps; i++) {
+      for (long i = 0; i < NUMOPS; i++) {
         try {
             stmt.execute(";");
         } catch (Exception e) { }
@@ -175,7 +174,7 @@ public class PelotonTest {
     } else {
       PreparedStatement stmt = conn.prepareStatement(INDEXSCAN_PARAM);
       conn.setAutoCommit(false);
-      for (long i = 0; i < numOps; i++) {
+      for (long i = 0; i < NUMOPS; i++) {
          try {
             stmt.setInt(1, 0);
             stmt.execute();
@@ -184,7 +183,17 @@ public class PelotonTest {
       }
     }
     elapsedTime = (new Date()).getTime() - startTime;
-    System.out.println("Nop throughput: " + numOps * 1000 / elapsedTime);
+    System.out.println("Nop throughput: " + NUMOPS * 1000 / elapsedTime);
+  }
+
+  public void EmptySelectTest() throws SQLException {
+    PreparedStatement stmt = conn.prepareStatement(SEQSCAN);
+    long startTime = System.currentTimeMillis(), elapsedTime;
+    for(long i=0; i < NUMOPS; i++) {
+      stmt.execute();
+    }
+    elapsedTime = (new Date()).getTime() - startTime;
+    System.out.println("Empty Select throughput: " + NUMOPS * 1000 / elapsedTime);
   }
 
 
@@ -208,6 +217,7 @@ public class PelotonTest {
       PelotonTest pt = new PelotonTest(target);
       pt.Init();
       pt.Nop_Test();
+      pt.EmptySelectTest();
       pt.Close();
   }
 
