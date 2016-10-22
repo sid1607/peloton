@@ -56,10 +56,20 @@ bool SeqScanExecutor::DInit() {
   target_table_ = node.GetTable();
 
   // offset by partition_id when multiple threads run the query
-  current_tile_group_offset_ = START_OID;
+  current_tile_group_offset_ = (START_OID + partition_id_);
+
+  LOG_TRACE("Partition_ID:%d, Parallelism Count:%d Tile Group Offset:%d\n",
+            partition_id_, parallelism_count_, current_tile_group_offset_);
 
   if (target_table_ != nullptr) {
     table_tile_group_count_ = target_table_->GetTileGroupCount();
+
+    // round up to the nearest value of parallelism count
+    num_tile_groups_per_thread_ =
+        (table_tile_group_count_ + parallelism_count_ - 1)/parallelism_count_;
+
+    // offset by the number of tiles that each thread processes
+    current_tile_group_offset_ *= num_tile_groups_per_thread_;
 
     if (column_ids_.empty()) {
       column_ids_.resize(target_table_->GetSchema()->GetColumnCount());
@@ -111,6 +121,8 @@ bool SeqScanExecutor::DExecute() {
   }
   // Scanning a table
   else if (children_.size() == 0) {
+    // support intra-query parallelism, be parallelism count aware
+
     LOG_TRACE("Seq Scan executor :: 0 child ");
 
     PL_ASSERT(target_table_ != nullptr);
@@ -120,17 +132,18 @@ bool SeqScanExecutor::DExecute() {
     concurrency::TransactionManager &transaction_manager =
         concurrency::TransactionManagerFactory::GetInstance();
 
-    bool acquire_owner = GetPlanNode<planner::AbstractScan>().IsForUpdate();
     auto current_txn = executor_context_->GetTransaction();
 
     // Retrieve next tile group.
-    while (current_tile_group_offset_ < table_tile_group_count_) {
+    while (current_tile_group_offset_ < table_tile_group_count_ &&
+           num_tile_groups_processed_ < num_tile_groups_per_thread_) {
 
       auto tile_group =
           target_table_->GetTileGroup(current_tile_group_offset_);
 
       // move to next offset
       current_tile_group_offset_++;
+      num_tile_groups_processed_++;
 
       auto tile_group_header = tile_group->GetHeader();
 
@@ -150,7 +163,7 @@ bool SeqScanExecutor::DExecute() {
           // if the tuple is visible, then perform predicate evaluation.
           if (predicate_ == nullptr) {
             position_list.push_back(tuple_id);
-            auto res = transaction_manager.PerformRead(current_txn, location, acquire_owner);
+            auto res = transaction_manager.PerformRead(current_txn, location);
             if (!res) {
               transaction_manager.SetTransactionResult(current_txn, RESULT_FAILURE);
               return res;
@@ -163,7 +176,7 @@ bool SeqScanExecutor::DExecute() {
             LOG_TRACE("Evaluation result: %s", eval->GetInfo().c_str());
             if (eval->IsTrue()) {
               position_list.push_back(tuple_id);
-              auto res = transaction_manager.PerformRead(current_txn, location, acquire_owner);
+              auto res = transaction_manager.PerformRead(current_txn, location);
               if (!res) {
                 transaction_manager.SetTransactionResult(current_txn, RESULT_FAILURE);
                 return res;
@@ -190,7 +203,6 @@ bool SeqScanExecutor::DExecute() {
       return true;
     }
   }
-
   return false;
 }
 

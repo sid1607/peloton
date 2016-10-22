@@ -55,14 +55,17 @@ struct ExchangeParams {
   std::vector<ResultType> result;
   const std::shared_ptr<Statement> statement;
   const std::vector<common::Value *> params;
-  int parallelism_count, partition_id;
+  const int parallelism_count, partition_id;
   const std::vector<int> result_format;
   ExchangeParams *self;
 
   inline ExchangeParams(const std::shared_ptr<Statement> &statement,
                         const std::vector<common::Value *>& params,
+                        const int parallelism_count, const int partition_id,
                         const std::vector<int> &result_format)
       : statement(statement), params(params),
+        parallelism_count(parallelism_count),
+        partition_id(partition_id),
         result_format(result_format) {
     f = p.get_future();
   }

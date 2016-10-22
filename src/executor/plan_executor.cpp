@@ -52,11 +52,6 @@ void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
         exchg_params->statement->GetQueryString(), DEFAULT_DB_ID);
   }
 
-  if (exchg_params->statement->GetPlanTree().get() == nullptr) {
-    exchg_params->p.set_value(p_status);
-    return;
-  }
-
   LOG_TRACE("PlanExecutor Start ");
 
   bool status;
@@ -64,9 +59,7 @@ void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
   bool single_statement_txn = false;
 
   auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
-  // auto txn = peloton::concurrency::current_txn;
   // This happens for single statement queries in PG
-  // if (txn == nullptr) {
   single_statement_txn = true;
   auto txn = txn_manager.BeginTransaction();
   // }
@@ -87,6 +80,9 @@ void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
                         executor_context.get()));
 
   LOG_TRACE("Initializing the executor tree");
+
+  executor_tree->SetParallelism(exchg_params->parallelism_count,
+                                exchg_params->partition_id);
 
   // Initialize the executor tree
   status = executor_tree->Init();

@@ -98,6 +98,12 @@ bool AbstractExecutor::Execute() {
   return status;
 }
 
+
+void AbstractExecutor::SetParallelism(int parallelism_count, int partition_id) {
+  parallelism_count_ = parallelism_count;
+  partition_id_ = partition_id;
+}
+
 void AbstractExecutor::SetContext(common::Value *value) {
   executor_context_->SetParams(value);
 }
