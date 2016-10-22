@@ -14,6 +14,7 @@
 
 #include "common/statement.h"
 #include "common/types.h"
+#include "concurrency/transaction_manager.h"
 #include "executor/abstract_executor.h"
 #include "boost/thread/future.hpp"
 
@@ -53,20 +54,25 @@ struct ExchangeParams {
   boost::promise<bridge::peloton_status> p;
   boost::unique_future<bridge::peloton_status> f;
   std::vector<ResultType> result;
+  concurrency::Transaction* txn;
   const std::shared_ptr<Statement> statement;
   const std::vector<common::Value *> params;
   const int parallelism_count, partition_id;
   const std::vector<int> result_format;
+  bool init_failure;
   ExchangeParams *self;
 
-  inline ExchangeParams(const std::shared_ptr<Statement> &statement,
+  inline ExchangeParams(concurrency::Transaction *txn,
+                        const std::shared_ptr<Statement> &statement,
                         const std::vector<common::Value *>& params,
                         const int parallelism_count, const int partition_id,
-                        const std::vector<int> &result_format)
-      : statement(statement), params(params),
+                        const std::vector<int> &result_format,
+                        const bool &init_failure)
+      : txn(txn), statement(statement), params(params),
         parallelism_count(parallelism_count),
         partition_id(partition_id),
-        result_format(result_format) {
+        result_format(result_format),
+        init_failure(init_failure) {
     f = p.get_future();
   }
 };

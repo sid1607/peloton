@@ -110,6 +110,14 @@ bridge::peloton_status TrafficCop::ExchangeOperator(
     const std::vector<common::Value *> &params,
     std::vector<ResultType>& result, const std::vector<int> &result_format) {
 
+  auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
+  // This happens for single statement queries in PG
+  bool single_statement_txn = true;
+  bool init_failure = false;
+
+  auto txn = txn_manager.BeginTransaction();
+  PL_ASSERT(txn);
+
   std::vector<std::shared_ptr<bridge::ExchangeParams>> exchg_params_list;
   int num_executor_threads = 1;
   bridge::peloton_status final_status;
@@ -128,8 +136,9 @@ bridge::peloton_status TrafficCop::ExchangeOperator(
   for(int i=0; i<num_executor_threads; i++) {
     // in first pass make the exch params list
     std::shared_ptr<bridge::ExchangeParams> exchg_params(
-        new bridge::ExchangeParams(statement, params, num_executor_threads,
-                                   i, result_format));
+        new bridge::ExchangeParams(txn, statement, params,
+                                   num_executor_threads,
+                                   i, result_format, init_failure));
     exchg_params->self = exchg_params.get();
     exchg_params_list.push_back(exchg_params);
     executor_thread_pool.SubmitTask(bridge::PlanExecutor::ExecutePlanLocal,
@@ -139,15 +148,40 @@ bridge::peloton_status TrafficCop::ExchangeOperator(
   for(int i=0; i<num_executor_threads; i++) {
     // wait for executor thread to return result
     auto temp_status = exchg_params_list[i]->f.get();
-    final_status.m_processed += temp_status.m_processed;
+    init_failure &= exchg_params_list[i]->init_failure;
+    if (init_failure == false) {
+      // proceed only if none of the threads so far have failed
+      final_status.m_processed += temp_status.m_processed;
 
-    // persist failure states across iterations
-    if (final_status.m_result == peloton::Result::RESULT_SUCCESS)
-      final_status.m_result = temp_status.m_result;
-    final_status.m_result_slots = nullptr;
+      // persist failure states across iterations
+      if (final_status.m_result == peloton::Result::RESULT_SUCCESS)
+        final_status.m_result = temp_status.m_result;
+      final_status.m_result_slots = nullptr;
 
-    result.insert(result.end(), exchg_params_list[i]->result.begin(),
-                  exchg_params_list[i]->result.end());
+      result.insert(result.end(), exchg_params_list[i]->result.begin(),
+                    exchg_params_list[i]->result.end());
+    }
+  }
+
+  LOG_TRACE("About to commit: single stmt: %d, init_failure: %d, status: %d",
+            single_statement_txn, init_failure, txn->GetResult());
+
+  // should we commit or abort ?
+  if (single_statement_txn == true || init_failure == true) {
+    auto status = txn->GetResult();
+    switch (status) {
+      case Result::RESULT_SUCCESS:
+        // Commit
+        LOG_TRACE("Commit Transaction");
+        final_status.m_result = txn_manager.CommitTransaction(txn);
+        break;
+
+      case Result::RESULT_FAILURE:
+      default:
+        // Abort
+        LOG_TRACE("Abort Transaction");
+        final_status.m_result = txn_manager.AbortTransaction(txn);
+    }
   }
 
   return final_status;
