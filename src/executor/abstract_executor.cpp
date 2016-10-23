@@ -28,7 +28,8 @@ namespace executor {
  */
 AbstractExecutor::AbstractExecutor(const planner::AbstractPlan *node,
                                    ExecutorContext *executor_context)
-    : node_(node), executor_context_(executor_context) {}
+    : node_(node), executor_context_(executor_context),
+      parallelism_count_(1), partition_id_(0) {}
 
 void AbstractExecutor::SetOutput(LogicalTile *table) { output.reset(table); }
 

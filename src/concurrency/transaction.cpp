@@ -73,7 +73,7 @@ void Transaction::RecordRead(const ItemPointer &location, int i) {
               rw_set_.at(tile_group_id, i).at(tuple_id) != RW_TYPE_INS_DEL);
     return;
   } else {
-    rw_set_.get(i)[tile_group_id][tuple_id] = RW_TYPE_READ;
+    rw_set_.get(i).operator[](tile_group_id)[tuple_id] = RW_TYPE_READ;
   }
 }
 
@@ -92,7 +92,7 @@ void Transaction::RecordReadOwn(const ItemPointer &location, int i) {
     }
     PL_ASSERT(type != RW_TYPE_DELETE && type != RW_TYPE_INS_DEL);
   } else {
-    rw_set_.get(i)[tile_group_id][tuple_id] = RW_TYPE_READ_OWN;
+    rw_set_.get(i).operator[](tile_group_id)[tuple_id] = RW_TYPE_READ_OWN;
   }
 }
 
@@ -134,9 +134,8 @@ void Transaction::RecordInsert(const ItemPointer &location, int i) {
           rw_set_.at(tile_group_id, i).end()) {
     PL_ASSERT(false);
   } else {
-    rw_set_.get(i)[tile_group_id][tuple_id] = RW_TYPE_INSERT;
+    rw_set_.get(i).operator[](tile_group_id)[tuple_id] = RW_TYPE_INSERT;
     ++insert_count_;
-
   }
 }
 

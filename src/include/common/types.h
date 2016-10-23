@@ -993,11 +993,11 @@ struct ReadWriteSet {
     return rw_list_[i].end();
   }
 
-  std::unordered_map<oid_t, RWType> at(oid_t oid, int i) {
+  std::unordered_map<oid_t, RWType>& at(oid_t oid, int i) {
     return rw_list_[i].at(oid);
   }
 
-  RWSetEle get(int i=0) {
+  RWSetEle& get(int i=0) {
     return rw_list_[i];
   }
 

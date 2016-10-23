@@ -319,9 +319,10 @@ public class ExchangeTest {
             System.out.println("Completed Batch Insert");
         }
         if (isExecute) {
+            et.TimeAndExecuteQuery(et, test1);
+            et.TimeAndExecuteQuery(et, test2);
+            et.TimeAndExecuteQuery(et, test3);
             et.TimeAndExecuteQuery(et, test4); 
-            // et.TimeAndExecuteQuery(et, test2);
-            // et.TimeAndExecuteQuery(et, test1);
         }
         et.Close();
     }
