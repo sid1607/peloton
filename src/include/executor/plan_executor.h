@@ -57,7 +57,7 @@ struct ExchangeParams {
   concurrency::Transaction* txn;
   const std::shared_ptr<Statement> statement;
   const std::vector<common::Value *> params;
-  const int parallelism_count, partition_id;
+  const int num_tasks, partition_id;
   const std::vector<int> result_format;
   bool init_failure;
   ExchangeParams *self;
@@ -65,11 +65,11 @@ struct ExchangeParams {
   inline ExchangeParams(concurrency::Transaction *txn,
                         const std::shared_ptr<Statement> &statement,
                         const std::vector<common::Value *>& params,
-                        const int parallelism_count, const int partition_id,
+                        const int num_tasks, const int partition_id,
                         const std::vector<int> &result_format,
                         const bool &init_failure)
       : txn(txn), statement(statement), params(params),
-        parallelism_count(parallelism_count),
+        num_tasks(num_tasks),
         partition_id(partition_id),
         result_format(result_format),
         init_failure(init_failure) {

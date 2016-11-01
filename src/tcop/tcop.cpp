@@ -110,34 +110,35 @@ bridge::peloton_status TrafficCop::ExchangeOperator(
     const std::vector<common::Value *> &params,
     std::vector<ResultType>& result, const std::vector<int> &result_format) {
 
-  auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
-  // This happens for single statement queries in PG
-  bool single_statement_txn = true;
-  bool init_failure = false;
-
-  auto txn = txn_manager.BeginTransaction();
-  PL_ASSERT(txn);
-
-  std::vector<std::shared_ptr<bridge::ExchangeParams>> exchg_params_list;
-  int num_executor_threads = 1;
+  int num_tasks = 1;
   bridge::peloton_status final_status;
-  final_status.m_processed = 0;
 
   if (statement->GetPlanTree().get() == nullptr) {
     return final_status;
   }
 
   if(statement->GetPlanTree()->GetPlanNodeType() ==
-                        PlanNodeType::PLAN_NODE_TYPE_SEQSCAN) {
+     PlanNodeType::PLAN_NODE_TYPE_SEQSCAN) {
     // provide intra-query parallelism for sequential scans
-    num_executor_threads = 1; /*std::thread::hardware_concurrency();*/
+    num_tasks = std::thread::hardware_concurrency();
   }
 
-  for(int i=0; i<num_executor_threads; i++) {
+  auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
+  // This happens for single statement queries in PG
+  bool single_statement_txn = true;
+  bool init_failure = false;
+
+  auto txn = txn_manager.BeginTransaction(num_tasks);
+  PL_ASSERT(txn);
+
+  std::vector<std::shared_ptr<bridge::ExchangeParams>> exchg_params_list;
+  final_status.m_processed = 0;
+
+  for(int i=0; i<num_tasks; i++) {
     // in first pass make the exch params list
     std::shared_ptr<bridge::ExchangeParams> exchg_params(
         new bridge::ExchangeParams(txn, statement, params,
-                                   num_executor_threads,
+                                   num_tasks,
                                    i, result_format, init_failure));
     exchg_params->self = exchg_params.get();
     exchg_params_list.push_back(exchg_params);
@@ -145,7 +146,7 @@ bridge::peloton_status TrafficCop::ExchangeOperator(
                                     &exchg_params->self);
   }
 
-  for(int i=0; i<num_executor_threads; i++) {
+  for(int i=0; i<num_tasks; i++) {
     // wait for executor thread to return result
     auto temp_status = exchg_params_list[i]->f.get();
     init_failure &= exchg_params_list[i]->init_failure;

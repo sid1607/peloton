@@ -85,13 +85,14 @@ void TimestampOrderingTransactionManager::InitTupleReserved(
   *(cid_t *)(reserved_area + LAST_READER_OFFSET) = 0;
 }
 
-Transaction *TimestampOrderingTransactionManager::BeginTransaction() {
+Transaction *TimestampOrderingTransactionManager::BeginTransaction(
+    const int num_parallel_tasks) {
   auto &log_manager = logging::LogManager::GetInstance();
   log_manager.PrepareLogging();
 
   txn_id_t txn_id = GetNextTransactionId();
   cid_t begin_cid = GetNextCommitId();
-  Transaction *txn = new Transaction(txn_id, begin_cid);
+  Transaction *txn = new Transaction(txn_id, begin_cid, num_parallel_tasks);
 
   auto eid = EpochManagerFactory::GetInstance().EnterEpoch(begin_cid);
   txn->SetEpochId(eid);
@@ -364,7 +365,8 @@ void TimestampOrderingTransactionManager::YieldOwnership(
 }
 
 bool TimestampOrderingTransactionManager::PerformRead(
-    Transaction *const current_txn, const ItemPointer &location, bool acquire_ownership) {
+    Transaction *const current_txn, const ItemPointer &location,
+    bool acquire_ownership, const int partition_id) {
 
   oid_t tile_group_id = location.block;
   oid_t tuple_id = location.offset;
@@ -388,7 +390,7 @@ bool TimestampOrderingTransactionManager::PerformRead(
       return false;
     }
     // Promote to RW_TYPE_READ_OWN
-    current_txn->RecordReadOwn(location);
+    current_txn->RecordReadOwn(location, partition_id);
   }
 
   // if the current transaction has already owned this tuple, then perform read
@@ -407,7 +409,7 @@ bool TimestampOrderingTransactionManager::PerformRead(
   // reader cid.
   if (SetLastReaderCommitId(tile_group_header, tuple_id,
                             current_txn->GetBeginCommitId()) == true) {
-    current_txn->RecordRead(location);
+    current_txn->RecordRead(location, partition_id);
     // Increment table read op stats
     if (FLAGS_stats_mode != STATS_TYPE_INVALID) {
       stats::BackendStatsContext::GetInstance()->IncrementTableReads(

@@ -72,7 +72,7 @@ void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
 
   LOG_TRACE("Initializing the executor tree");
 
-  executor_tree->SetParallelism(exchg_params->parallelism_count,
+  executor_tree->SetParallelism(exchg_params->num_tasks,
                                 exchg_params->partition_id);
 
   // Initialize the executor tree

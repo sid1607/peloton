@@ -46,7 +46,7 @@ class AbstractExecutor {
 
   bool Execute();
 
-  virtual void SetParallelism(int parallelism_count, int partition_id);
+  virtual void SetParallelism(int num_tasks, int partition_id);
 
   //===--------------------------------------------------------------------===//
   // Children + Parent Helpers
@@ -116,7 +116,7 @@ class AbstractExecutor {
   ExecutorContext *executor_context_ = nullptr;
 
   // number of threads executing this query
-  int parallelism_count_;
+  int num_tasks_;
 
   // modulo-partition that this thread of
   // execution will work on

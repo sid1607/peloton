@@ -59,14 +59,14 @@ bool SeqScanExecutor::DInit() {
   current_tile_group_offset_ = (START_OID + partition_id_);
 
   LOG_TRACE("Partition_ID:%d, Parallelism Count:%d Tile Group Offset:%d\n",
-            partition_id_, parallelism_count_, current_tile_group_offset_);
+            partition_id_, num_tasks_, current_tile_group_offset_);
 
   if (target_table_ != nullptr) {
     table_tile_group_count_ = target_table_->GetTileGroupCount();
 
     // round up to the nearest value of parallelism count
     num_tile_groups_per_thread_ =
-        (table_tile_group_count_ + parallelism_count_ - 1)/parallelism_count_;
+        (table_tile_group_count_ + num_tasks_ - 1)/num_tasks_;
 
     // offset by the number of tiles that each thread processes
     current_tile_group_offset_ *= num_tile_groups_per_thread_;
@@ -163,7 +163,8 @@ bool SeqScanExecutor::DExecute() {
           // if the tuple is visible, then perform predicate evaluation.
           if (predicate_ == nullptr) {
             position_list.push_back(tuple_id);
-            auto res = transaction_manager.PerformRead(current_txn, location);
+            auto res = transaction_manager.PerformRead(current_txn, location,
+                                                       false, partition_id_);
             if (!res) {
               transaction_manager.SetTransactionResult(current_txn, RESULT_FAILURE);
               return res;
@@ -176,7 +177,8 @@ bool SeqScanExecutor::DExecute() {
             LOG_TRACE("Evaluation result: %s", eval->GetInfo().c_str());
             if (eval->IsTrue()) {
               position_list.push_back(tuple_id);
-              auto res = transaction_manager.PerformRead(current_txn, location);
+              auto res = transaction_manager.PerformRead(current_txn, location,
+                                                         false, partition_id_);
               if (!res) {
                 transaction_manager.SetTransactionResult(current_txn, RESULT_FAILURE);
                 return res;
