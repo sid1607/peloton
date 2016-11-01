@@ -56,7 +56,7 @@ struct ExchangeParams {
   std::vector<ResultType> result;
   concurrency::Transaction* txn;
   const std::shared_ptr<Statement> statement;
-  const std::vector<common::Value *> params;
+  const std::vector<common::Value> params;
   const int num_tasks, partition_id;
   const std::vector<int> result_format;
   bool init_failure;
@@ -64,7 +64,7 @@ struct ExchangeParams {
 
   inline ExchangeParams(concurrency::Transaction *txn,
                         const std::shared_ptr<Statement> &statement,
-                        const std::vector<common::Value *>& params,
+                        const std::vector<common::Value>& params,
                         const int num_tasks, const int partition_id,
                         const std::vector<int> &result_format,
                         const bool &init_failure)
@@ -109,7 +109,6 @@ class PlanExecutor {
    * ParamListInfo.
    */
   static void ExecutePlanLocal(ExchangeParams **exchg_params_arg);
-
   /*
    * @brief When a peloton node recvs a query plan in rpc mode,
    * this function is invoked
@@ -117,9 +116,10 @@ class PlanExecutor {
    * @return the number of tuple it executes and logical_tile_list
    */
   static void ExecutePlanRemote(
-      const planner::AbstractPlan *plan, const std::vector<common::Value *> &params,
+      const planner::AbstractPlan *plan, const std::vector<common::Value> &params,
       std::vector<std::unique_ptr<executor::LogicalTile>> &logical_tile_list,
       boost::promise<int> &p);
+
 };
 
 }  // namespace bridge

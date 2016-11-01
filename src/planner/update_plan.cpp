@@ -68,11 +68,11 @@ void UpdatePlan::BuildInitialUpdatePlan(parser::UpdateStatement *parse_tree,
     tlist.emplace_back(col_id, update_expr);
   }
 
-  for (uint i = 0; i < schema->GetColumns().size(); i++) {
+  auto &schema_columns = schema->GetColumns();
+  for (uint i = 0; i < schema_columns.size(); i++) {
     bool is_in_target_list = false;
     for (auto col_id : column_ids) {
-      if (schema->GetColumns()[i].column_name ==
-          schema->GetColumns()[col_id].column_name)
+      if (schema_columns[i].column_name == schema_columns[col_id].column_name)
         is_in_target_list = true;
       break;
     }
@@ -103,7 +103,7 @@ UpdatePlan::UpdatePlan(parser::UpdateStatement *parse_tree) {
 UpdatePlan::UpdatePlan(parser::UpdateStatement *parse_tree,
                        std::vector<oid_t> &key_column_ids,
                        std::vector<ExpressionType> &expr_types,
-                       std::vector<common::Value *> &values, oid_t &index_id) {
+                       std::vector<common::Value> &values, oid_t &index_id) {
   std::vector<oid_t> column_ids;
   BuildInitialUpdatePlan(parse_tree, column_ids);
   // Create index scan desc
@@ -120,7 +120,7 @@ UpdatePlan::UpdatePlan(parser::UpdateStatement *parse_tree,
   AddChild(std::move(index_scan_node));
 }
 
-void UpdatePlan::SetParameterValues(std::vector<common::Value *> *values) {
+void UpdatePlan::SetParameterValues(std::vector<common::Value> *values) {
   LOG_TRACE("Setting parameter values in Update");
   // First update project_info_ target list
   // Create new project_info_
@@ -139,12 +139,11 @@ void UpdatePlan::SetParameterValues(std::vector<common::Value *> *values) {
         target_table_->GetSchema(), update_expr);
     tlist.emplace_back(col_id, update_expr);
   }
-
-  for (uint i = 0; i < schema->GetColumns().size(); i++) {
+  auto &schema_columns = schema->GetColumns();
+  for (uint i = 0; i < schema_columns.size(); i++) {
     bool is_in_target_list = false;
     for (auto col_id : columns) {
-      if (schema->GetColumns()[i].column_name ==
-          schema->GetColumns()[col_id].column_name)
+      if (schema_columns[i].column_name == schema_columns[col_id].column_name)
         is_in_target_list = true;
       break;
     }

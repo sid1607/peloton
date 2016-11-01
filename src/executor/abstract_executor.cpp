@@ -99,13 +99,12 @@ bool AbstractExecutor::Execute() {
   return status;
 }
 
-
 void AbstractExecutor::SetParallelism(int num_tasks, int partition_id) {
   num_tasks_ = num_tasks;
   partition_id_ = partition_id;
 }
 
-void AbstractExecutor::SetContext(common::Value *value) {
+void AbstractExecutor::SetContext(common::Value &value) {
   executor_context_->SetParams(value);
 }
 

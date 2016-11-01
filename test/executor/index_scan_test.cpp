@@ -61,7 +61,7 @@ TEST_F(IndexScanTests, IndexPredicateTest) {
   auto index = data_table->GetIndex(0);
   std::vector<oid_t> key_column_ids;
   std::vector<ExpressionType> expr_types;
-  std::vector<common::Value *> values;
+  std::vector<common::Value> values;
   std::vector<expression::AbstractExpression *> runtime_keys;
 
   key_column_ids.push_back(0);
@@ -124,7 +124,7 @@ TEST_F(IndexScanTests, MultiColumnPredicateTest) {
   auto index = data_table->GetIndex(1);
   std::vector<oid_t> key_column_ids;
   std::vector<ExpressionType> expr_types;
-  std::vector<common::Value *> values;
+  std::vector<common::Value> values;
   std::vector<expression::AbstractExpression *> runtime_keys;
 
   key_column_ids.push_back(1);
@@ -178,7 +178,7 @@ void ShowTable(std::string database_name, std::string table_name) {
   std::shared_ptr<Statement> statement;
   auto &peloton_parser = parser::Parser::GetInstance();
   bridge::peloton_status status;
-  std::vector<common::Value *> params;
+  std::vector<common::Value> params;
   std::vector<ResultType> result;
   statement.reset(new Statement("SELECT", "SELECT * FROM " + table->GetName()));
   auto select_stmt =
@@ -208,7 +208,7 @@ void ExecuteSQLQuery(const std::string statement_name,
   statement->SetPlanTree(
       optimizer::SimpleOptimizer::BuildPelotonPlanTree(insert_stmt));
   LOG_INFO("Building plan tree completed!");
-  std::vector<common::Value *> params;
+  std::vector<common::Value> params;
   std::vector<ResultType> result;
   bridge::PlanExecutor::PrintPlan(statement->GetPlanTree().get(), "Plan");
   LOG_INFO("Executing plan...");

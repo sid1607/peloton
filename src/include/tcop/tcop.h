@@ -64,7 +64,7 @@ class TrafficCop {
  */
   static bridge::peloton_status ExchangeOperator(
       const std::shared_ptr<Statement> &statement,
-      const std::vector<common::Value *> &params,
+      const std::vector<common::Value> &params,
       std::vector<ResultType>& result, const std::vector<int> &result_format);
 
   // InitBindPrepStmt - Prepare and bind a query from a query string

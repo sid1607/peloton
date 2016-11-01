@@ -27,7 +27,7 @@ namespace bridge {
  * Added for network invoking efficiently
  */
 executor::ExecutorContext *BuildExecutorContext(
-    const std::vector<common::Value *> &params, concurrency::Transaction *txn);
+    const std::vector<common::Value> &params, concurrency::Transaction *txn);
 
 executor::AbstractExecutor *BuildExecutorTree(
     executor::AbstractExecutor *root, const planner::AbstractPlan *plan,
@@ -37,7 +37,7 @@ void CleanExecutorTree(executor::AbstractExecutor *root);
 
 /**
  * @brief Build a executor tree and execute it.
- * Use std::vector<common::Value *> as params to make it more elegant for
+ * Use std::vector<common::Value> as params to make it more elegant for
  * networking
  * Before ExecutePlan, a node first receives value list, so we should pass
  * value list directly rather than passing Postgres's ParamListInfo
@@ -59,7 +59,7 @@ void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
   LOG_TRACE("Txn ID = %lu ", txn->GetTransactionId());
   LOG_TRACE("Building the executor tree");
 
-  // Use const std::vector<common::Value *> &params to make it more elegant for
+  // Use const std::vector<common::Value> &params to make it more elegant for
   // network
   std::unique_ptr<executor::ExecutorContext> executor_context(
       BuildExecutorContext(exchg_params->params, exchg_params->txn));
@@ -132,15 +132,14 @@ void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
 
 /**
  * @brief Build a executor tree and execute it.
- * Use std::vector<common::Value *> as params to make it more elegant for
+ * Use std::vector<common::Value> as params to make it more elegant for
  * networking
  * Before ExecutePlan, a node first receives value list, so we should pass
  * value list directly rather than passing Postgres's ParamListInfo
  * @return number of executed tuples and logical_tile_list
  */
-
 void PlanExecutor::ExecutePlanRemote(
-    const planner::AbstractPlan *plan, const std::vector<common::Value *> &params,
+    const planner::AbstractPlan *plan, const std::vector<common::Value> &params,
     std::vector<std::unique_ptr<executor::LogicalTile>> &logical_tile_list,
     boost::promise<int> &p) {
   if (plan == nullptr) return p.set_value(-1);
@@ -164,7 +163,7 @@ void PlanExecutor::ExecutePlanRemote(
   LOG_TRACE("Txn ID = %lu ", txn->GetTransactionId());
   LOG_TRACE("Building the executor tree");
 
-  // Use const std::vector<common::Value *> &params to make it more elegant for
+  // Use const std::vector<common::Value> &params to make it more elegant for
   // network
   std::unique_ptr<executor::ExecutorContext> executor_context(
       BuildExecutorContext(params, txn));
@@ -265,7 +264,7 @@ void PlanExecutor::PrintPlan(const planner::AbstractPlan *plan,
  * @brief Build Executor Context
  */
 executor::ExecutorContext *BuildExecutorContext(
-    const std::vector<common::Value *> &params, concurrency::Transaction *txn) {
+    const std::vector<common::Value> &params, concurrency::Transaction *txn) {
   return new executor::ExecutorContext(txn, params);
 }
 

@@ -585,7 +585,7 @@ public class PelotonTest {
   }
 
 
-  public void Batch_Insert() throws SQLException{
+  public void Batch_Insert() throws Exception{
     PreparedStatement stmt = conn.prepareStatement(TEMPLATE_FOR_BATCH_INSERT);
 
     conn.setAutoCommit(false);
@@ -750,7 +750,7 @@ public class PelotonTest {
   }
 
   static public void StatsTest() throws Exception {
-    System.out.println("Stats Tests");
+    System.out.println("Stats Tests: make sure to start peloton with stats_mode 1");
     PelotonTest pt = new PelotonTest();
     pt.Init();
     pt.Stat_Test();
