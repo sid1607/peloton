@@ -55,7 +55,7 @@ class ThreadPool {
     pool_size_ = cpu_ids.size();
     PL_ASSERT(pool_size_ != 0);
 
-    for (int i=0; i < pool_size_; i++) {
+    for (size_t i=0; i < pool_size_; i++) {
       auto new_thread = thread_pool_.create_thread(
           boost::bind(&boost::asio::io_service::run, &io_service_));
       auto nt_handle = new_thread->native_handle();
