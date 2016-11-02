@@ -48,6 +48,23 @@ class ThreadPool {
     dedicated_threads_.resize(dedicated_thread_count_);
   }
 
+  void InitializePinned(std::vector<int> &cpu_ids) {
+    auto num_cpus = std::thread::hardware_concurrency();
+    cpu_set_t cpuset;
+
+    pool_size_ = cpu_ids.size();
+    PL_ASSERT(pool_size_ != 0);
+
+    for (int i=0; i < pool_size_; i++) {
+      auto new_thread = thread_pool_.create_thread(
+          boost::bind(&boost::asio::io_service::run, &io_service_));
+      auto nt_handle = new_thread->native_handle();
+      CPU_ZERO(&cpuset);
+      CPU_SET((cpu_ids[i]+1) % num_cpus, &cpuset);
+      pthread_setaffinity_np(nt_handle, sizeof(cpu_set_t), &cpuset);
+    }
+  }
+
   void Shutdown() {
     // always join lastly created threads first.
     for (size_t i = 0; i < current_thread_count_; ++i) {
@@ -89,6 +106,7 @@ class ThreadPool {
 
   // real thread pool that holds a set of threads.
   boost::thread_group thread_pool_;
+
   // io_service provides IO functionality of asynchronize services.
   boost::asio::io_service io_service_;
   // io_service::work is responsible for starting the io_service processing
