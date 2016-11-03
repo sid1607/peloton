@@ -92,6 +92,10 @@ class ThreadPool {
     dedicated_threads_[thread_id].reset(new std::thread(std::thread(func, params...)));
   }
 
+  boost::asio::io_service &GetIOService() {
+    return io_service_;
+  }
+
  private:
   ThreadPool(const ThreadPool &);
   ThreadPool &operator=(const ThreadPool &);

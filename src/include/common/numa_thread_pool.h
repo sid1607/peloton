@@ -24,11 +24,6 @@ class NumaThreadPool {
 	int pool_size_;
 	std::unordered_map<int, ThreadPool> thread_pool_map_;
 
- private:
-	inline void MapCpuToNuma() {
-
-	}
-
  public:
 	inline NumaThreadPool() : pool_size_(0) {
 		srand(time(NULL));
@@ -58,7 +53,8 @@ class NumaThreadPool {
 	void SubmitTask(int numa_socket_id, FunctionType &&func,
 									const ParamTypes &&... params) {
 		// add task to thread pool of given numa socket
-		thread_pool_map_[numa_socket_id].SubmitTask(std::ref(func), std::ref(params...));
+		auto &io_service = thread_pool_map_[numa_socket_id].GetIOService();
+		io_service.post(std::bind(func, params...));
 	}
 
 	template <typename FunctionType, typename... ParamTypes>
@@ -66,7 +62,7 @@ class NumaThreadPool {
 		int rand_index = rand() % thread_pool_map_.size();
 		auto random_it = std::next(std::begin(thread_pool_map_), rand_index);
 		// submit task to a random numa socket
-		random_it->second.SubmitTask(func, params...);
+		random_it->second.SubmitTask(std::ref(func), std::ref(params...));
 	};
 
 	// Shuts down all thread pools one by one
