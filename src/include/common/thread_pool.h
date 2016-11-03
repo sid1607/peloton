@@ -20,7 +20,6 @@
 #include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
-
 #include "common/macros.h"
 
 namespace peloton {
@@ -49,7 +48,6 @@ class ThreadPool {
   }
 
   void InitializePinned(std::vector<int> &cpu_ids) {
-    auto num_cpus = std::thread::hardware_concurrency();
     cpu_set_t cpuset;
 
     pool_size_ = cpu_ids.size();
@@ -60,10 +58,8 @@ class ThreadPool {
           boost::bind(&boost::asio::io_service::run, &io_service_));
       auto nt_handle = new_thread->native_handle();
       CPU_ZERO(&cpuset);
-      CPU_SET((cpu_ids[i]+1) % num_cpus, &cpuset);
+      CPU_SET(cpu_ids[i], &cpuset);
       pthread_setaffinity_np(nt_handle, sizeof(cpu_set_t), &cpuset);
-      auto cpuID  = sched_getcpu();
-      LOG_ERROR("CPUIds:%d Cpu core:%d Numa Node:%d", cpu_ids[i] cpuID, numa_node_of_cpu(cpuID));
     }
   }
 
