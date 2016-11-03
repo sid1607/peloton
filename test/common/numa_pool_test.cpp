@@ -31,7 +31,7 @@ struct TaskArg {
 
 void run(int *socket_id, std::atomic<int> *ctr) {
 	auto cpuID = sched_getcpu();
-	LOG_ERROR("CPU:%d NumaNode:%d", cpuID, numa_node_of_cpu(cpuID));
+	LOG_DEBUG("CPU:%d NumaNode:%d", cpuID, numa_node_of_cpu(cpuID));
   EXPECT_EQ(*socket_id, numa_node_of_cpu(cpuID));
 	delete socket_id;
 	ctr->fetch_add(1);
@@ -40,20 +40,22 @@ void run(int *socket_id, std::atomic<int> *ctr) {
 TEST_F(NumaPoolTest, BasicTest) {
 	NumaThreadPool numa_thread_pool;
 	int num_cpus = std::thread::hardware_concurrency();
-	int num_cores_per_socket = num_cpus/(numa_max_node()+1);
+	int num_tasks_per_socket = 100;
 
 	numa_thread_pool.Initialize(num_cpus);
 	std::atomic<int> counter(0);
 
-	for (int i=0; i<=numa_max_node(); i++) {
-		for (int j=0; j<num_cores_per_socket; j++) {
+	for (int j=0; j<num_tasks_per_socket; j++) {
+		// interleave task assignment across numa sockets
+		for (int i=0; i<=numa_max_node(); i++) {
+			// to avoid race conditions just for test
 			int *socket_id = new int(i);
 			numa_thread_pool.SubmitTask(i, run, &(*socket_id), &counter);
 		}
 	}
 
 	// Wait for the test to finish
-	while (counter.load() != num_cpus) {
+	while (counter.load() != num_tasks_per_socket) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 

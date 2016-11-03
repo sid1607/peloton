@@ -61,7 +61,8 @@ class NumaThreadPool {
 		int rand_index = rand() % thread_pool_map_.size();
 		auto random_it = std::next(std::begin(thread_pool_map_), rand_index);
 		// submit task to a random numa socket
-		random_it->second.SubmitTask(std::ref(func), std::ref(params...));
+		auto &io_service = random_it->second.GetIOService();
+		io_service.post(std::bind(func, params...));
 	};
 
 	// Shuts down all thread pools one by one
