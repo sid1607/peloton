@@ -32,7 +32,7 @@ struct TaskArg {
 void run(int *socket_id, std::atomic<int> *ctr) {
 	auto cpuID = sched_getcpu();
 	LOG_DEBUG("CPU:%d NumaNode:%d", cpuID, numa_node_of_cpu(cpuID));
-  EXPECT_EQ(*socket_id, numa_node_of_cpu(cpuID));
+	EXPECT_EQ(*socket_id, numa_node_of_cpu(cpuID));
 	delete socket_id;
 	ctr->fetch_add(1);
 }
@@ -55,7 +55,7 @@ TEST_F(NumaPoolTest, BasicTest) {
 	}
 
 	// Wait for the test to finish
-	while (counter.load() != num_tasks_per_socket) {
+	while (counter.load() != num_tasks_per_socket*(numa_max_node()+1)) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 
