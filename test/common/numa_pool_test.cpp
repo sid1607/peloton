@@ -24,12 +24,13 @@ class NumaPoolTest : public PelotonTest {};
 
 struct TaskArg {
 	const int socket_id;
+	TaskArg *self;
 	TaskArg(const int &i) : socket_id(i) {};
 };
 
-void run(const int *socket_id, std::atomic<int> *ctr) {
+void run(TaskArg **arg, std::atomic<int> *ctr) {
 	auto cpuID = sched_getcpu();
-	EXPECT_EQ(*socket_id, numa_node_of_cpu(cpuID));
+	EXPECT_EQ((*arg)->socket_id, numa_node_of_cpu(cpuID));
 	ctr->fetch_add(1);
 }
 
@@ -43,8 +44,9 @@ TEST_F(NumaPoolTest, BasicTest) {
 
 	for (int i=0; i<=numa_max_node(); i++) {
 		std::shared_ptr<TaskArg> task_arg(new TaskArg(i));
+		task_arg->self = task_arg.get();
 		for (int j=0; j<num_cores_per_socket; j++) {
-			numa_thread_pool.SubmitTask(i, run, &task_arg->socket_id, &counter);
+			numa_thread_pool.SubmitTask(i, run, &task_arg->self, &counter);
 		}
 	}
 
