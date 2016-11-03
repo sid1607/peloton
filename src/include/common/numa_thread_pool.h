@@ -42,7 +42,6 @@ class NumaThreadPool {
 
 		for (auto itr = numa_cpu_map.begin(); itr != numa_cpu_map.end(); itr++) {
 			thread_pool_map_[itr->first].InitializePinned(itr->second);
-
 		}
 	}
 

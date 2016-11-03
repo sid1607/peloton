@@ -29,10 +29,11 @@ struct TaskArg {
 	TaskArg(const int &i) : socket_id(i) {};
 };
 
-void run(std::atomic<int> *ctr) {
+void run(int *socket_id, std::atomic<int> *ctr) {
 	auto cpuID = sched_getcpu();
 	LOG_ERROR("CPU:%d NumaNode:%d", cpuID, numa_node_of_cpu(cpuID));
-	// EXPECT_EQ((*arg)->socket_id, numa_node_of_cpu(cpuID));
+  EXPECT_EQ(*socket_id, numa_node_of_cpu(cpuID));
+	delete socket_id;
 	ctr->fetch_add(1);
 }
 
@@ -46,7 +47,8 @@ TEST_F(NumaPoolTest, BasicTest) {
 
 	for (int i=0; i<=numa_max_node(); i++) {
 		for (int j=0; j<num_cores_per_socket; j++) {
-			numa_thread_pool.SubmitTask(i, run, &counter);
+			int *socket_id = new int(i);
+			numa_thread_pool.SubmitTask(i, run, &(*socket_id), &counter);
 		}
 	}
 
