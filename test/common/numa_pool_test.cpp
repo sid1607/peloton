@@ -12,6 +12,7 @@
 
 #include "common/numa_thread_pool.h"
 #include "common/harness.h"
+#include "common/logger.h"
 
 namespace peloton {
 namespace test {
@@ -30,6 +31,7 @@ struct TaskArg {
 
 void run(TaskArg **arg, std::atomic<int> *ctr) {
 	auto cpuID = sched_getcpu();
+	LOG_ERROR("CPU:%d NumaNode:%d Socket_ID:%d", cpuID, numa_node_of_cpu(cpuID), (*arg)->socket_id);
 	EXPECT_EQ((*arg)->socket_id, numa_node_of_cpu(cpuID));
 	ctr->fetch_add(1);
 }
@@ -43,9 +45,9 @@ TEST_F(NumaPoolTest, BasicTest) {
 	std::atomic<int> counter(0);
 
 	for (int i=0; i<=numa_max_node(); i++) {
-		std::shared_ptr<TaskArg> task_arg(new TaskArg(i));
-		task_arg->self = task_arg.get();
 		for (int j=0; j<num_cores_per_socket; j++) {
+			std::shared_ptr<TaskArg> task_arg(new TaskArg(i));
+			task_arg->self = task_arg.get();
 			numa_thread_pool.SubmitTask(i, run, &task_arg->self, &counter);
 		}
 	}
