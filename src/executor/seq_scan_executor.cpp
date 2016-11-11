@@ -132,6 +132,7 @@ bool SeqScanExecutor::DExecute() {
     concurrency::TransactionManager &transaction_manager =
         concurrency::TransactionManagerFactory::GetInstance();
 
+    bool acquire_owner = GetPlanNode<planner::AbstractScan>().IsForUpdate();
     auto current_txn = executor_context_->GetTransaction();
 
     // Retrieve next tile group.
@@ -163,8 +164,8 @@ bool SeqScanExecutor::DExecute() {
           // if the tuple is visible, then perform predicate evaluation.
           if (predicate_ == nullptr) {
             position_list.push_back(tuple_id);
-            auto res = transaction_manager.PerformRead(current_txn, location,
-                                                       false, partition_id_);
+            auto res = transaction_manager.PerformRead(current_txn, location, acquire_owner,
+                                                       partition_id_);
             if (!res) {
               transaction_manager.SetTransactionResult(current_txn, RESULT_FAILURE);
               return res;
@@ -177,8 +178,8 @@ bool SeqScanExecutor::DExecute() {
             LOG_TRACE("Evaluation result: %s", eval.GetInfo().c_str());
             if (eval.IsTrue()) {
               position_list.push_back(tuple_id);
-              auto res = transaction_manager.PerformRead(current_txn, location,
-                                                         false, partition_id_);
+              auto res = transaction_manager.PerformRead(current_txn, location, acquire_owner,
+                                                         partition_id_);
               if (!res) {
                 transaction_manager.SetTransactionResult(current_txn, RESULT_FAILURE);
                 return res;
