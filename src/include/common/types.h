@@ -1032,7 +1032,7 @@ struct ReadWriteSet {
 
   bool empty() const {
     for (auto ele : rw_list_) {
-      if (ele.empty())
+      if (ele.empty() == false)
         return false;
     }
     return true;
