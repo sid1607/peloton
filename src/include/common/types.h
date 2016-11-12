@@ -1019,7 +1019,7 @@ struct ReadWriteSet {
   }
 
   RWSetEle::const_iterator end(int i) const {
-    return rw_list_[i].end();co
+    return rw_list_[i].end();
   }
 
   std::unordered_map<oid_t, RWType>& at(oid_t oid, int i) {

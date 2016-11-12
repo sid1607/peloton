@@ -68,8 +68,9 @@ Result TrafficCop::ExecuteStatement(
   // Then, execute the statement
   bool unnamed = true;
   std::vector<int> result_format(statement->GetTupleDescriptor().size(), 0);
-  auto status = ExecuteStatement(statement, unnamed, result_format, result,
-                                 rows_changed, error_message);
+  std::vector<common::Value> params;
+  auto status = ExecuteStatement(statement, params, unnamed, result_format,
+                                 result, rows_changed, error_message);
 
   if (status == Result::RESULT_SUCCESS) {
     LOG_TRACE("Execution succeeded!");
@@ -83,17 +84,14 @@ Result TrafficCop::ExecuteStatement(
 
 Result TrafficCop::ExecuteStatement(
     const std::shared_ptr<Statement> &statement,
+    const std::vector<common::Value> &params,
     UNUSED_ATTRIBUTE const bool unnamed, const std::vector<int> &result_format,
     std::vector<ResultType> &result, int &rows_changed,
     UNUSED_ATTRIBUTE std::string &error_message) {
-
   LOG_TRACE("Execute Statement of name: %s",
             statement->GetStatementName().c_str());
   LOG_TRACE("Execute Statement of query: %s",
             statement->GetStatementName().c_str());
-
-  std::vector<common::Value> params;
-
   try {
     bridge::PlanExecutor::PrintPlan(statement->GetPlanTree().get(), "Plan");
     auto status = ExchangeOperator(statement, params, result, result_format);
@@ -218,8 +216,7 @@ std::shared_ptr<Statement> TrafficCop::PrepareStatement(
     bridge::PlanExecutor::PrintPlan(statement->GetPlanTree().get(), "Plan");
     LOG_DEBUG("Statement Prepared!");
     return std::move(statement);
-  }
-  catch (Exception &e) {
+  } catch (Exception &e) {
     error_message = e.what();
     return nullptr;
   }
