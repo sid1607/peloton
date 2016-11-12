@@ -1019,7 +1019,7 @@ struct ReadWriteSet {
   }
 
   RWSetEle::const_iterator end(int i) const {
-    return rw_list_[i].end();
+    return rw_list_[i].end();co
   }
 
   std::unordered_map<oid_t, RWType>& at(oid_t oid, int i) {
@@ -1031,7 +1031,7 @@ struct ReadWriteSet {
   }
 
   bool empty() const {
-    for (auto ele : rw_list_) {
+    for (auto &ele : rw_list_) {
       if (ele.empty() == false)
         return false;
     }
@@ -1039,7 +1039,7 @@ struct ReadWriteSet {
   }
 
   RWSetEle::const_iterator begin() const {
-    for (auto ele : rw_list_) {
+    for (auto &ele : rw_list_) {
       if (ele.begin() != ele.end())
         return ele.begin();
     }
