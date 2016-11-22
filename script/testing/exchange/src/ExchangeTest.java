@@ -69,9 +69,9 @@ public class ExchangeTest {
 
   private static final int BATCH_SIZE = 10000;
 
-  private static final float SKEW_START = 0.4f;
+  private static final float SKEW_START = 0.45f;
 
-  private static final float SKEW_END = 0.6f;
+  private static final float SKEW_END = 0.55f;
 
   private static int numRows;
 
@@ -126,7 +126,7 @@ public class ExchangeTest {
         stmt.setString(2, nameTokens[j%nameTokens.length]);
         stmt.setInt(3, key%100);
         stmt.setInt(4, key);
-        double frac = ((double) key)/numRows;
+        float frac = ((float) key)/numRows;
         if (frac >= SKEW_START && frac < SKEW_END) {
           stmt.setInt(5, 1);
         } else {
