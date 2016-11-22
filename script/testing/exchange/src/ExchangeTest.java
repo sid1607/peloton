@@ -32,14 +32,14 @@ public class ExchangeTest {
 
   private final String DROP = "DROP TABLE IF EXISTS A;";
   private final String DDL = 
-      "CREATE TABLE A (id INT PRIMARY KEY, name TEXT, extra_id INT, single INT);";
+      "CREATE TABLE A (id INT PRIMARY KEY, name TEXT, extra_id INT, single INT, skew INT);";
 
   public final static String[] nameTokens = { "BAR", "OUGHT", "ABLE", "PRI",
     "PRES", "ESE", "ANTI", "CALLY", "ATION", "EING" };
 
   private final Random rand;
 
-  private final String TEMPLATE_FOR_BATCH_INSERT = "INSERT INTO A VALUES (?,?,?,?);";
+  private final String TEMPLATE_FOR_BATCH_INSERT = "INSERT INTO A VALUES (?,?,?,?,?);";
 
   private final String SEQSCAN = "SELECT * FROM A";
 
@@ -61,15 +61,21 @@ public class ExchangeTest {
 
   private final String COUNT_SINGLE_RESULT = "SELECT COUNT(*) FROM A WHERE single = 10";
 
+  private final String SKEW_SCAN = "SELECT * FROM A WHERE skew=1";
+
   private List<Double> outputBuffer;
 
   private final Connection conn;
 
   private static final int BATCH_SIZE = 10000;
 
+  private static final float SKEW_START = 0.4f;
+
+  private static final float SKEW_END = 0.6f;
+
   private static int numRows;
 
-  private static final int NUM_COLS = 4;
+  private static final int NUM_COLS = 5;
 
   public ExchangeTest() throws SQLException {
     try {
@@ -120,6 +126,12 @@ public class ExchangeTest {
         stmt.setString(2, nameTokens[j%nameTokens.length]);
         stmt.setInt(3, key%100);
         stmt.setInt(4, key);
+        double frac = ((double) key)/numRows;
+        if (frac >= SKEW_START && frac < SKEW_END) {
+          stmt.setInt(5, 1);
+        } else {
+          stmt.setInt(5, 0);
+        }
         stmt.addBatch();
       }
       
@@ -355,6 +367,26 @@ public class ExchangeTest {
     System.out.println("Selectivity50 Scan successful");
   }
 
+  public void SelectivitySkewScan() throws SQLException {
+    int rowCtr = 0;
+    conn.setAutoCommit(true);
+    Statement stmt = conn.createStatement();
+    ResultSet rs = stmt.executeQuery(SKEW_SCAN);
+    
+    ResultSetMetaData rsmd = rs.getMetaData();
+    if (rsmd.getColumnCount() != NUM_COLS)
+      throw new SQLException("Table should have "+ NUM_COLS +" columns");
+
+    while (rs.next())
+      rowCtr++;
+
+    int expected = (int)((SKEW_END-SKEW_START)*numRows);
+    if (rowCtr != expected)
+      throw new SQLException("Insufficient rows returned:" +
+            rowCtr +"/" + expected);
+    System.out.println("SelectivitySkewScan successful");
+  }
+
   public void TimeAndExecuteQuery(Object obj, Method method) throws Exception {
     long startTime, endTime;
     startTime = System.nanoTime();
@@ -427,6 +459,8 @@ public class ExchangeTest {
                                                 parameterTypes);
     Method test4 = ExchangeTest.class.getMethod("Selectivity50Scan",
                                                 parameterTypes);
+    Method test5 = ExchangeTest.class.getMethod("SelectivitySkewScan",
+                                                parameterTypes);
 
     ExchangeTest et = new ExchangeTest();
     if (isCreate) {
@@ -442,6 +476,7 @@ public class ExchangeTest {
       et.TimeAndExecuteQuery(et, test2);
       et.TimeAndExecuteQuery(et, test3);
       et.TimeAndExecuteQuery(et, test4);
+      et.TimeAndExecuteQuery(et, test5);
       et.PrintTimes();
     }
 
