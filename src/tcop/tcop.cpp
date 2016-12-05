@@ -111,6 +111,10 @@ bridge::peloton_status TrafficCop::ExchangeOperator(
 
   int num_tasks = 1;
   bridge::peloton_status final_status;
+  bool seq_scan = false;
+
+  auto start = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::steady_clock::now().time_since_epoch()).count());
 
   if (statement->GetPlanTree().get() == nullptr) {
     return final_status;
@@ -119,7 +123,8 @@ bridge::peloton_status TrafficCop::ExchangeOperator(
   if(statement->GetPlanTree()->GetPlanNodeType() ==
      PlanNodeType::PLAN_NODE_TYPE_SEQSCAN) {
     // provide intra-query parallelism for sequential scans
-    num_tasks = std::thread::hardware_concurrency();
+    num_tasks = std::thread::hardware_concurrency()*4;
+    seq_scan = true;
   }
 
   auto &txn_manager = concurrency::TransactionManagerFactory::GetInstance();
@@ -145,6 +150,8 @@ bridge::peloton_status TrafficCop::ExchangeOperator(
                                     &exchg_params->self);
   }
 
+  std::unordered_map<int, double> exec_histograms;
+
   for(int i=0; i<num_tasks; i++) {
     // wait for executor thread to return result
     auto temp_status = exchg_params_list[i]->f.get();
@@ -160,6 +167,9 @@ bridge::peloton_status TrafficCop::ExchangeOperator(
 
       result.insert(result.end(), exchg_params_list[i]->result.begin(),
                     exchg_params_list[i]->result.end());
+      if (seq_scan == true) {
+        exec_histograms[exchg_params_list[i]->cpu_id] += exchg_params_list[i]->exec_time;
+      }
     }
   }
 
@@ -182,6 +192,22 @@ bridge::peloton_status TrafficCop::ExchangeOperator(
         LOG_TRACE("Abort Transaction");
         final_status.m_result = txn_manager.AbortTransaction(txn);
     }
+  }
+
+  auto end = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::steady_clock::now().time_since_epoch()).count());
+
+  if (seq_scan == true) {
+    std::stringstream histogram;
+    double highest_time = 0;
+    for (auto itr=exec_histograms.begin(); itr!=exec_histograms.end(); itr++) {
+      histogram << itr->first << " " << itr->second << std::endl;
+      if (itr->second > highest_time)
+        highest_time = itr->second;
+    }
+
+    LOG_ERROR("\n%sHighest time:%f\n%f",
+              histogram.str().c_str(), highest_time, (end - start)/1000);
   }
 
   return final_status;

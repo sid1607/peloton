@@ -88,7 +88,14 @@ void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
 
     // Execute the tree until we get result tiles from root node
     while (status == true) {
+      auto start = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::steady_clock::now().time_since_epoch()).count());
+
       status = executor_tree->Execute();
+
+      auto end = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::steady_clock::now().time_since_epoch()).count());
+      exchg_params->exec_time += (end - start)/1000;
 
       std::unique_ptr<executor::LogicalTile> logical_tile(
           executor_tree->GetOutput());
@@ -127,6 +134,7 @@ void PlanExecutor::ExecutePlanLocal(ExchangeParams **exchg_params_arg) {
   // clean up executor tree
   CleanExecutorTree(executor_tree.get());
 
+  exchg_params->cpu_id = sched_getcpu();
   exchg_params->p.set_value(p_status);
 }
 

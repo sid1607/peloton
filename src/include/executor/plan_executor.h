@@ -61,6 +61,8 @@ struct ExchangeParams {
   const std::vector<int> result_format;
   bool init_failure;
   ExchangeParams *self;
+  int cpu_id;
+  double exec_time;
 
   inline ExchangeParams(concurrency::Transaction *txn,
                         const std::shared_ptr<Statement> &statement,

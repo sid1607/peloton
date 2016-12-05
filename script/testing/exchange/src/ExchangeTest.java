@@ -20,9 +20,11 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.lang3.StringUtils;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.LinkedList;
+import java.util.Arrays;
 
 public class ExchangeTest {
   private static boolean isCount; // are we running count * queries?
@@ -32,20 +34,23 @@ public class ExchangeTest {
 
   private final String DROP = "DROP TABLE IF EXISTS A;";
   private final String DDL = 
-      "CREATE TABLE A (id INT PRIMARY KEY, name TEXT, extra_id INT, single INT, skew INT);";
+      "CREATE TABLE A (id INT PRIMARY KEY, name TEXT, extra_id INT, single INT);";
+
+  private final String PARTITON_DDL = 
+    "CREATE TABLE A (id INT PRIMARY KEY, name TEXT, extra_id INT, single INT) PARTITION BY extra_id";
 
   public final static String[] nameTokens = { "BAR", "OUGHT", "ABLE", "PRI",
     "PRES", "ESE", "ANTI", "CALLY", "ATION", "EING" };
 
   private final Random rand;
 
-  private final String TEMPLATE_FOR_BATCH_INSERT = "INSERT INTO A VALUES (?,?,?,?,?);";
+  private final String INSERT_PREFIX = "INSERT INTO A VALUES ";
 
   private final String SEQSCAN = "SELECT * FROM A";
 
-  private final String NON_KEY_SCAN_10 = "SELECT * FROM A WHERE name = ?";
+  private final String NON_KEY_SCAN_10 = "SELECT * FROM A WHERE extra_id < ?";
 
-  private final String NON_KEY_SCAN_1 = "SELECT * FROM A WHERE extra_id = ?";
+  private final String NON_KEY_SCAN_1 = "SELECT * FROM A WHERE extra_id < ?";
 
   private final String NON_KEY_SCAN_50 = "SELECT * FROM A WHERE extra_id >= ?";
 
@@ -53,15 +58,13 @@ public class ExchangeTest {
 
   private final String COUNT_SEQSCAN = "SELECT COUNT(*) FROM A";
 
-  private final String COUNT_NON_KEY_SCAN_10 = "SELECT COUNT(*) FROM A WHERE name = ?";
+  private final String COUNT_NON_KEY_SCAN_10 = "SELECT COUNT(*) FROM A WHERE extra_id < ?";
 
-  private final String COUNT_NON_KEY_SCAN_1 = "SELECT COUNT(*) FROM A WHERE extra_id = ?";
+  private final String COUNT_NON_KEY_SCAN_1 = "SELECT COUNT(*) FROM A WHERE extra_id < ?";
 
   private final String COUNT_NON_KEY_SCAN_50 = "SELECT COUNT(*) FROM A WHERE extra_id >= ?";
 
   private final String COUNT_SINGLE_RESULT = "SELECT COUNT(*) FROM A WHERE single = 10";
-
-  private final String SKEW_SCAN = "SELECT * FROM A WHERE skew=1";
 
   private List<Double> outputBuffer;
 
@@ -69,13 +72,11 @@ public class ExchangeTest {
 
   private static final int BATCH_SIZE = 10000;
 
-  private static final float SKEW_START = 0.45f;
-
-  private static final float SKEW_END = 0.55f;
+  private static final int MULTI_QUERY_SIZE = 40;
 
   private static int numRows;
 
-  private static final int NUM_COLS = 5;
+  private static final int NUM_COLS = 4;
 
   public ExchangeTest() throws SQLException {
     try {
@@ -102,59 +103,63 @@ public class ExchangeTest {
   *
   * @throws SQLException
   */
-  public void Init() throws SQLException {
+  public void Init(boolean isPartitioned) throws SQLException {
     conn.setAutoCommit(true);
     Statement stmt = conn.createStatement();
     stmt.execute(DROP);
-    stmt.execute(DDL);
+    if (isPartitioned == false) {
+      stmt.execute(DDL);
+    } else {
+      System.out.println("Partitioned Insert");
+      stmt.execute(PARTITON_DDL);
+    }
   }
 
-  public void BatchInsert() throws SQLException{
+  public void SetInsertValueString(List<String> values, int index, int key, int j) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("(");
+    sb.append(key+",");
+    sb.append("\'" + nameTokens[j%nameTokens.length] + "\',");
+    sb.append((key%1000) + ",");
+    sb.append(key + ")");
+    values.set(index, sb.toString());
+  }
+
+  public void BatchInsert() throws SQLException {
     int[] res;
     int insertCount = 0, numInsertions, key;
     int numBatches = (numRows + BATCH_SIZE - 1)/BATCH_SIZE;
-    String name1, name2;
-    PreparedStatement stmt = conn.prepareStatement(TEMPLATE_FOR_BATCH_INSERT);
-    conn.setAutoCommit(false);
+    conn.setAutoCommit(true);
+    Statement stmt = conn.createStatement();
+    boolean result;
+    List<String> values = Arrays.asList(new String[MULTI_QUERY_SIZE]);
 
     for (int i=1; i<=numBatches; i++) {
-      
       numInsertions = (i==numBatches) ? numRows - insertCount : BATCH_SIZE;
-      for(int j=1; j <= numInsertions; j++) {
-        key = j+insertCount;
-        stmt.setInt(1, key);
-        stmt.setString(2, nameTokens[j%nameTokens.length]);
-        stmt.setInt(3, key%100);
-        stmt.setInt(4, key);
-        float frac = ((float) key)/numRows;
-        if (frac >= SKEW_START && frac < SKEW_END) {
-          stmt.setInt(5, 1);
-        } else {
-          stmt.setInt(5, 0);
+      for(int j=1; j <= numInsertions; j+=MULTI_QUERY_SIZE) {
+        for (int k=0; k<MULTI_QUERY_SIZE; k++) {
+          key = j+k+insertCount;
+          SetInsertValueString(values, k, key, j+k);
         }
-        stmt.addBatch();
-      }
-      
-      try{
-        res = stmt.executeBatch();
-      }catch(SQLException e){
-        e.printStackTrace();
-        throw e.getNextException();
+
+        try{
+          result = stmt.execute(INSERT_PREFIX + StringUtils.join(values, ",") +"; ");
+        }catch(SQLException e){
+          e.printStackTrace();
+          throw e.getNextException();
+        }
+
+        if (result != false) 
+      throw new SQLException("Incorrect query execute status");
+        if(stmt.getUpdateCount() != MULTI_QUERY_SIZE)
+      throw new SQLException("Unexpected update count: "+stmt.getUpdateCount()+"/"+MULTI_QUERY_SIZE);
       }
 
-      for(int k=0; k < res.length; k++){
-        if (res[k] < 0) {
-          throw new SQLException("Query "+ (k+1) +" returned " + res[k]);
-        }
-      }
-      
-      insertCount += res.length;
+      insertCount += numInsertions;
+
       System.out.println("Inserted " + insertCount + 
           " rows out of " + numRows + " rows.");
-      stmt.clearBatch();
     }
-    
-    conn.commit();
   }
 
   public void SeqScan() throws SQLException {
@@ -247,7 +252,7 @@ public class ExchangeTest {
     } else {
       pstmt = conn.prepareStatement(NON_KEY_SCAN_1);
     }
-    pstmt.setInt(1, 1);
+    pstmt.setInt(1, 10);
     pstmt.execute();
 
     ResultSet rs = pstmt.getResultSet();
@@ -292,7 +297,7 @@ public class ExchangeTest {
       pstmt = conn.prepareStatement(NON_KEY_SCAN_10);
     }
 
-    pstmt.setString(1, nameTokens[1]);
+    pstmt.setInt(1, 100);
     pstmt.execute();
 
     ResultSet rs = pstmt.getResultSet();
@@ -335,7 +340,7 @@ public class ExchangeTest {
       pstmt = conn.prepareStatement(NON_KEY_SCAN_50);
     }
 
-    pstmt.setInt(1, 50);
+    pstmt.setInt(1, 500);
     pstmt.execute();
 
     ResultSet rs = pstmt.getResultSet();
@@ -367,26 +372,6 @@ public class ExchangeTest {
     System.out.println("Selectivity50 Scan successful");
   }
 
-  public void SelectivitySkewScan() throws SQLException {
-    int rowCtr = 0;
-    conn.setAutoCommit(true);
-    Statement stmt = conn.createStatement();
-    ResultSet rs = stmt.executeQuery(SKEW_SCAN);
-    
-    ResultSetMetaData rsmd = rs.getMetaData();
-    if (rsmd.getColumnCount() != NUM_COLS)
-      throw new SQLException("Table should have "+ NUM_COLS +" columns");
-
-    while (rs.next())
-      rowCtr++;
-
-    int expected = (int)((SKEW_END-SKEW_START)*numRows);
-    if (rowCtr != expected)
-      throw new SQLException("Insufficient rows returned:" +
-            rowCtr +"/" + expected);
-    System.out.println("SelectivitySkewScan successful");
-  }
-
   public void TimeAndExecuteQuery(Object obj, Method method) throws Exception {
     long startTime, endTime;
     startTime = System.nanoTime();
@@ -403,7 +388,7 @@ public class ExchangeTest {
   }
 
   public static void main(String[] args) throws Exception {
-    boolean isCreate, isExecute, isLoad;
+    boolean isCreate, isExecute, isLoad, isPartitioned;
     Options options = new Options();
     long startTime, endTime;
     Class[] parameterTypes = new Class[0];
@@ -411,21 +396,24 @@ public class ExchangeTest {
     // load CLI options
     Option rows = new Option("r", "rows", true,
       "Required: number of input rows");
-    Option count = new Option("s", "count", true,
-      "Toggles normal SELECT queries and COUNT(*) queries (Default: true)");
     rows.setRequired(true);
+    Option count = new Option("s", "count", false,
+      "Toggles normal SELECT queries and COUNT(*) queries (Default: true)");
     Option create = new Option("c", "create", true,
       "Create a new table (true or false)");
     Option load = new Option("l", "load", true,
       "Load values into the table (true or false)");
     Option execute = new Option("e", "execute", true,
       "Execute queries on the table (true or false)");
+    Option partition = new Option("p", "partition", true,
+      "Create a partition table (true or false)");
 
     options.addOption(rows);
     options.addOption(count);
     options.addOption(create);
     options.addOption(load);
     options.addOption(execute);
+    options.addOption(partition);
 
     CommandLineParser parser = new DefaultParser();
     HelpFormatter formatter = new HelpFormatter();
@@ -444,11 +432,11 @@ public class ExchangeTest {
       numRows = Integer.parseInt(cmd.getOptionValue("rows"));
     }
 
-    isCount = Boolean.parseBoolean(cmd.getOptionValue("count", "true"));
-    
+    isCount = Boolean.parseBoolean(cmd.getOptionValue("count", "false"));    
     isCreate = Boolean.parseBoolean(cmd.getOptionValue("create", "true"));
     isLoad = Boolean.parseBoolean(cmd.getOptionValue("load", "true"));
     isExecute = Boolean.parseBoolean(cmd.getOptionValue("execute", "true"));
+    isPartitioned = Boolean.parseBoolean(cmd.getOptionValue("partition", "false"));
 
     // select the tests that will be run
     Method test1 = ExchangeTest.class.getMethod("Selectivity1TupleScan", 
@@ -459,12 +447,10 @@ public class ExchangeTest {
                                                 parameterTypes);
     Method test4 = ExchangeTest.class.getMethod("Selectivity50Scan",
                                                 parameterTypes);
-    Method test5 = ExchangeTest.class.getMethod("SelectivitySkewScan",
-                                                parameterTypes);
 
     ExchangeTest et = new ExchangeTest();
     if (isCreate) {
-      et.Init();
+      et.Init(isPartitioned);
       System.out.println("Completed Init");
     }
     if (isLoad) {
@@ -474,9 +460,8 @@ public class ExchangeTest {
     if (isExecute) {
       et.TimeAndExecuteQuery(et, test1);
       et.TimeAndExecuteQuery(et, test2);
-      et.TimeAndExecuteQuery(et, test3);
-      et.TimeAndExecuteQuery(et, test4);
-      et.TimeAndExecuteQuery(et, test5);
+      // et.TimeAndExecuteQuery(et, test3);
+      // et.TimeAndExecuteQuery(et, test4);
       et.PrintTimes();
     }
 
